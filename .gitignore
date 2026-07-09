@@ -5,3 +5,8 @@ node_modules/
 .env*
 !.env.example
 .claude/settings.local.json
+
+# Note di lavoro interne: non fanno parte del plugin pubblicato
+handoff.md
+desiderata.md
+tasks/

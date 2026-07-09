@@ -1,0 +1,17 @@
+{
+  "name": "vibe-shield-marketplace",
+  "owner": {
+    "name": "Matteo Di Lorenzo",
+    "email": "matteo.dilorenzo@mat-academy.com"
+  },
+  "description": "Marketplace del plugin Vibe Shield: sicurezza automatica per progetti vibe coding.",
+  "plugins": [
+    {
+      "name": "vibe-shield",
+      "source": "./",
+      "description": "Blindatura di sicurezza automatica per qualsiasi progetto: scansione segreti, audit vulnerabilità con verifica incrociata, blocco di commit e deploy a rischio, fix guidati.",
+      "category": "security",
+      "keywords": ["security", "secrets", "audit", "owasp"]
+    }
+  ]
+}

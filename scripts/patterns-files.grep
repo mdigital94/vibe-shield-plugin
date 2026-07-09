@@ -1,0 +1,15 @@
+(^|/)\.env(\.[^./]+)?$
+\.pem$
+\.p12$
+\.pfx$
+\.keystore$
+\.jks$
+(^|/)id_(rsa|ed25519|ecdsa|dsa)$
+service[-_]?account[^/]*\.json$
+(^|/)credentials\.json$
+(^|/)secrets?\.(json|ya?ml|yml|txt|env)$
+(^|/)\.npmrc$
+(^|/)\.pypirc$
+(^|/)\.netrc$
+(^|/)\.htpasswd$
+firebase-adminsdk[^/]*\.json$

@@ -1,0 +1,40 @@
+# Vibe Shield: controlli di sicurezza in CI (GitHub Actions).
+# Copiato da /setup-security in .github/workflows/security.yml del progetto.
+# Protegge il repository anche quando le modifiche NON passano da Claude Code
+# (editor, sito di GitHub, altri collaboratori).
+name: Security checks
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # ogni lunedì: le dipendenze invecchiano anche se il codice non cambia
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: Scansione segreti (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # storia completa: i segreti nei commit vecchi contano
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependencies:
+    name: Vulnerabilità nelle dipendenze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: npm audit (progetti Node)
+        if: ${{ hashFiles('package-lock.json') != '' }}
+        run: npm audit --audit-level=high
+      - name: pip-audit (progetti Python)
+        if: ${{ hashFiles('requirements.txt') != '' }}
+        run: |
+          python -m pip install --quiet pip-audit
+          pip-audit -r requirements.txt

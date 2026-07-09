@@ -1,0 +1,18 @@
+# Vibe Shield: aggiornamenti di sicurezza automatici delle dipendenze.
+# Copiato da /setup-security in .github/dependabot.yml del progetto.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

@@ -1,0 +1,25 @@
+AKIA[0-9A-Z]{16}
+ASIA[0-9A-Z]{16}
+AIza[0-9A-Za-z_-]{35}
+gh[pousr]_[A-Za-z0-9]{36}
+github_pat_[A-Za-z0-9_]{22}
+glpat-[A-Za-z0-9_-]{20}
+xox[baprs]-[A-Za-z0-9-]{10}
+sk_live_[0-9a-zA-Z]{20}
+rk_live_[0-9a-zA-Z]{20}
+whsec_[A-Za-z0-9]{24}
+sk-ant-[A-Za-z0-9_-]{24}
+sk-proj-[A-Za-z0-9_-]{24}
+sk-[A-Za-z0-9]{48}
+SG\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{30,}
+-----BEGIN [A-Z ]*PRIVATE KEY( BLOCK)?-----
+[0-9]{8,10}:AA[A-Za-z0-9_-]{33}
+(postgres|postgresql|mysql|mongodb(\+srv)?|redis|amqp)://[A-Za-z0-9_.-]+:[^@/[:space:]]{4,}@
+hf_[A-Za-z0-9]{30}
+npm_[A-Za-z0-9]{36}
+dop_v1_[0-9a-f]{64}
+shpat_[0-9a-f]{32}
+shpss_[0-9a-f]{32}
+r8_[A-Za-z0-9]{30}
+figd_[A-Za-z0-9_-]{30}
+(SUPABASE_SERVICE_ROLE|service_role)[^=:]{0,20}[=:][[:space:]]*['"]?eyJ

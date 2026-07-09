@@ -14,6 +14,7 @@ PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 INPUT="$(cat)"
 FILE="$(vs_json_get "$INPUT" "tool_input.file_path")"
+[ -z "$FILE" ] && FILE="$(vs_json_get "$INPUT" "tool_input.notebook_path")"
 CWD="$(vs_json_get "$INPUT" "cwd")"
 [ -z "$FILE" ] && exit 0
 if [ -n "$CWD" ] && [ -d "$CWD" ]; then
@@ -62,7 +63,7 @@ case "$BASENAME" in
 esac
 
 # Caso 2: possibile segreto vero scritto in un file di codice o config
-if grep -I -E -f "$VS_PATTERNS_EXACT" "$FILE" 2>/dev/null | vs_filter_placeholders | vs_filter_allowlist | grep -q .; then
+if grep -I -o -E -f "$VS_PATTERNS_EXACT" "$FILE" 2>/dev/null | vs_filter_placeholders | vs_filter_allowlist | grep -q .; then
   {
     echo "⚠️ VIBE SHIELD: il file appena scritto sembra contenere un segreto vero (chiave API, token o password):"
     echo "  $FILE"

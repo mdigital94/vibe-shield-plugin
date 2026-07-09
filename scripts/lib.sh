@@ -40,6 +40,7 @@ process.stdin.on("end", () => {
 ' "$path" 2>/dev/null
     return
   fi
+  echo "⚠️ VIBE SHIELD: nessun parser JSON disponibile (jq, python3 o node): i controlli su questa azione sono DISATTIVATI. Installa uno dei tre per riattivarli." >&2
   printf ''
 }
 
@@ -53,16 +54,43 @@ vs_filter_placeholders() {
 # righe vuote e commenti (#) ignorati. Una riga che matcha il testo del finding
 # (contenuto o percorso del file) lo sopprime. Va usato con giudizio: e' pensato
 # per i falsi allarmi ricorrenti, non per zittire problemi veri.
+# Ogni pattern viene validato prima dell'uso: una regex non valida, o un pattern
+# cosi' ampio da matchare un testo "canarino" senza alcuna relazione con un vero
+# segreto, viene scartato con un avviso invece di azzerare in silenzio i finding.
 vs_filter_allowlist() {
-  local al=".vibe-shield/allowlist" patterns
-  if [ -f "$al" ]; then
-    patterns="$(grep -vE '^[[:space:]]*(#|$)' "$al" 2>/dev/null)"
-    if [ -n "$patterns" ]; then
-      grep -v -E -f <(printf '%s\n' "$patterns") 2>/dev/null
-      return
-    fi
+  local al=".vibe-shield/allowlist" raw line ok=""
+  if [ ! -f "$al" ]; then
+    cat
+    return
   fi
-  cat
+  raw="$(grep -vE '^[[:space:]]*(#|$)' "$al" 2>/dev/null)"
+  if [ -z "$raw" ]; then
+    cat
+    return
+  fi
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    printf '' | grep -E "$line" >/dev/null 2>&1
+    rc=$?
+    if [ "$rc" = "2" ]; then
+      echo "⚠️ VIBE SHIELD: pattern allowlist non valido, ignorato: $line" >&2
+      continue
+    fi
+    if printf 'VIBE_SHIELD_CANARIO_9f3a7c21_non_e_un_segreto_reale' | grep -qE "$line" 2>/dev/null; then
+      echo "⚠️ VIBE SHIELD: pattern allowlist troppo ampio, rifiutato per sicurezza: $line" >&2
+      continue
+    fi
+    ok="$ok
+$line"
+  done <<EOF_PATTERNS
+$raw
+EOF_PATTERNS
+  ok="$(printf '%s\n' "$ok" | grep -v '^$')"
+  if [ -n "$ok" ]; then
+    grep -v -E -f <(printf '%s\n' "$ok") 2>/dev/null
+  else
+    cat
+  fi
 }
 
 # Directory con i pattern dei segreti (relativa a questo file).

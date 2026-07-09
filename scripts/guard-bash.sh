@@ -27,7 +27,7 @@ if printf '%s' "$CMD" | grep -qE '(^|[;&|[:space:]])git([[:space:]]+-C[[:space:]
 fi
 
 # git push e comandi di pubblicazione/deploy piu' comuni
-if printf '%s' "$CMD" | grep -qE '(^|[;&|[:space:]])(git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+push|vercel[[:space:]]+(deploy|--prod)|vercel[[:space:]]*$|netlify[[:space:]]+deploy|firebase[[:space:]]+deploy|wrangler[[:space:]]+(deploy|publish)|fly(ctl)?[[:space:]]+deploy|railway[[:space:]]+up|render[[:space:]]+deploy|npm[[:space:]]+publish|gh[[:space:]]+repo[[:space:]]+create)'; then
+if printf '%s' "$CMD" | grep -qE '(^|[;&|[:space:]])(git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+push|vercel[[:space:]]+(deploy|--prod)|vercel[[:space:]]*$|netlify[[:space:]]+deploy|firebase[[:space:]]+deploy|wrangler[[:space:]]+(deploy|publish)|fly(ctl)?[[:space:]]+deploy|railway[[:space:]]+up|render[[:space:]]+deploy|npm[[:space:]]+publish|gh[[:space:]]+(repo[[:space:]]+create|release[[:space:]]+create)|heroku[[:space:]]+(deploy|releases:create)|gcloud[[:space:]]+app[[:space:]]+deploy|amplify[[:space:]]+publish|aws[[:space:]]+s3[[:space:]]+sync|surge([[:space:]]|$))'; then
   exec "$PLUGIN_ROOT/scripts/guard-push.sh" "$CMD"
 fi
 

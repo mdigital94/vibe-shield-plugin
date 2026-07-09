@@ -12,8 +12,14 @@ PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 IN_GIT=0
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 && IN_GIT=1
+if [ "$IN_GIT" = "1" ]; then
+  TOPLEVEL="$(git rev-parse --show-toplevel 2>/dev/null)"
+  [ -n "$TOPLEVEL" ] && cd "$TOPLEVEL" 2>/dev/null
+fi
 
 # 1) Scan veloce dei segreti nei file tracciati (solo repo git: git grep e' rapidissimo)
+# Si parte dalla radice del repo (TOPLEVEL) cosi' un push lanciato da una sottocartella
+# scansiona comunque tutti i file tracciati, non solo quelli sotto la cwd.
 if [ "$IN_GIT" = "1" ]; then
   HITS="$(git grep -I -l -E -f "$VS_PATTERNS_EXACT" -- . 2>/dev/null \
     | grep -viE '\.env\.(example|sample|template|dist)$|(^|/)package-lock\.json$|(^|/)yarn\.lock$|(^|/)pnpm-lock\.yaml$' \

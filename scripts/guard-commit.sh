@@ -12,9 +12,17 @@ set -u
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 . "$PLUGIN_ROOT/scripts/lib.sh" || exit 0
 
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
-
 CMD="${1:-}"
+
+# Se il comando usa "git -C <dir> commit", i controlli vanno fatti in quella
+# cartella, non nella cwd della sessione (altrimenti il commit reale sfugge
+# al controllo o viene scansionato lo stage sbagliato).
+GIT_C_DIR="$(printf '%s' "$CMD" | sed -n 's/.*git[[:space:]]\{1,\}-C[[:space:]]\{1,\}\([^[:space:]]\{1,\}\).*/\1/p')"
+if [ -n "$GIT_C_DIR" ]; then
+  cd "$GIT_C_DIR" 2>/dev/null || exit 0
+fi
+
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 
 # 1) File gia' in stage
 STAGED="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)"
@@ -23,9 +31,12 @@ STAGED="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)"
 EXTRA=""
 if printf '%s' "$CMD" | grep -qE 'git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+add[[:space:]]'; then
   ALL_EXTRA="$( { git diff --name-only; git ls-files --others --exclude-standard; } 2>/dev/null | sort -u )"
-  # Prova a limitare ai soli path passati a git add; in caso di dubbio, scansiona tutto
+  # Conta quante volte compare "git add" nel comando: con piu' di un'occorrenza il
+  # parsing per singolo comando non e' affidabile (rischio di bypass), quindi si
+  # ricade sempre sul fallback prudente che scansiona tutti i file candidati.
+  ADD_COUNT="$(printf '%s' "$CMD" | grep -oE 'git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+add[[:space:]]' | wc -l | tr -d ' ')"
   ADD_ARGS="$(printf '%s' "$CMD" | sed -n 's/.*git[[:space:]]\{1,\}add[[:space:]]\{1,\}\([^;&|]*\).*/\1/p')"
-  if [ -n "$ADD_ARGS" ] && ! printf '%s' "$ADD_ARGS" | grep -qE '(^|[[:space:]])(-A|-a|-u|--all|\.)([[:space:]]|$)' && ! printf '%s' "$ADD_ARGS" | grep -q '"'; then
+  if [ "$ADD_COUNT" = "1" ] && [ -n "$ADD_ARGS" ] && ! printf '%s' "$ADD_ARGS" | grep -qE '(^|[[:space:]])(-A|-a|-u|--all|\.)([[:space:]]|$)' && ! printf '%s' "$ADD_ARGS" | grep -qE '["'"'"']'; then
     for tok in $ADD_ARGS; do
       case "$tok" in -*) continue ;; esac
       tok="${tok%/}"
@@ -58,9 +69,9 @@ while IFS= read -r f; do
   if [ -f "$f" ]; then
     SIZE="$(wc -c < "$f" 2>/dev/null || echo 0)"
     [ "$SIZE" -gt 1000000 ] && continue
-    HIT="$(grep -I -E -f "$VS_PATTERNS_EXACT" "$f" 2>/dev/null | vs_filter_placeholders | vs_filter_allowlist || true)"
+    HIT="$(grep -I -o -E -f "$VS_PATTERNS_EXACT" "$f" 2>/dev/null | vs_filter_placeholders | vs_filter_allowlist || true)"
   else
-    HIT="$(git show ":$f" 2>/dev/null | grep -I -E -f "$VS_PATTERNS_EXACT" 2>/dev/null | vs_filter_placeholders | vs_filter_allowlist || true)"
+    HIT="$(git show ":$f" 2>/dev/null | grep -I -o -E -f "$VS_PATTERNS_EXACT" 2>/dev/null | vs_filter_placeholders | vs_filter_allowlist || true)"
   fi
   if [ -n "$HIT" ]; then
     BAD_CONTENT="$BAD_CONTENT

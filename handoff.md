@@ -33,7 +33,7 @@ Plugin Claude Code (v0.4.0) che blinda automaticamente qualsiasi progetto (vibe 
 - Aspettative utente gestite: chiede protezione "da migliori hacker del mondo"; comunicato onestamente che contro i bot è realistico, contro attaccanti d'élite nessuno strumento può garantire (vedi README, sezione onestà sul rischio).
 
 ## 👉 Next steps (what I'd do next)
-1. Installazione locale definitiva (senza GitHub), quando l'utente vuole: in Claude Code eseguire `/plugin marketplace add /Users/matteo/Documents/Progetti_Dev_Personali/Cybersecurity` e poi `/plugin install vibe-shield@vibe-shield-marketplace`. Da quel momento vale in ogni progetto senza --plugin-dir.
+1. Installazione locale definitiva (senza GitHub), quando l'utente vuole: in Claude Code eseguire `/plugin marketplace add <cartella-del-repo>` e poi `/plugin install vibe-shield@vibe-shield-marketplace`. Da quel momento vale in ogni progetto senza --plugin-dir.
 2. Prova interattiva breve dell'utente (5 min): su un progetto vero, provare /vibe-shield:setup-security e /vibe-shield:security-audit dal vivo.
 3. Pubblicazione su GitHub: RINVIATA su decisione utente (2026-07-06). L'utente non conosce ancora i repository GitHub: quando la affronteremo, partire spiegando le basi (cos'è un repo, pubblico vs privato) prima dei comandi.
 4. Verificare su una macchina con i CLI installati la sintassi non interattiva di gemini/codex/ollama usata da second-opinion.

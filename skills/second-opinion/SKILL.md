@@ -28,10 +28,11 @@ Per ogni finding CRITICO e ALTO del report (estendi ai MEDI o a tutti se $ARGUME
 
 1. Prepara un prompt autonomo e minimale: descrizione del finding, l'estratto di codice rilevante (solo le righe necessarie più un po' di contesto), lo stack del progetto, e la domanda: "Questo è un problema di sicurezza reale e sfruttabile? Rispondi: CONFERMATO, SMENTITO o INCERTO, con motivazione in 2-3 frasi."
 2. **Mai includere segreti nei prompt**: maschera qualsiasi chiave o password presente negli estratti.
-3. Invoca ogni CLI disponibile in modalità non interattiva (verifica la sintassi con `--help` se un comando fallisce):
-   - Gemini: `gemini -p "<prompt>"`
-   - Codex: `codex exec "<prompt>"`
-   - Ollama: `ollama run <modello-installato> "<prompt>"`
+3. **Mai interpolare l'estratto di codice direttamente in una stringa di comando shell tra virgolette**: il codice sotto audit non è fidato e può contenere caratteri speciali (`$(...)`, backtick, virgolette) che la shell eseguirebbe prima di lanciare il CLI. Scrivi invece il prompt in un file temporaneo e passalo in modo sicuro:
+   - Gemini: `gemini -p "$(cat "$PROMPT_FILE")"` non va bene per lo stesso motivo; usa `cat "$PROMPT_FILE" | gemini` se il CLI supporta stdin, altrimenti verifica con `gemini --help` l'opzione per leggere il prompt da file (es. `--file`).
+   - Codex: `codex exec < "$PROMPT_FILE"` (stdin) o l'equivalente opzione da file indicata da `codex exec --help`.
+   - Ollama: `ollama run <modello-installato> < "$PROMPT_FILE"` (stdin).
+   In tutti i casi verifica prima con `--help` l'opzione realmente supportata dal CLI installato; se nessuna opzione sicura è disponibile, salta quel revisore e annotalo.
 4. Metti un timeout ragionevole ai comandi e non bloccarti su un CLI che non risponde: salta e annota.
 
 ## 4. Confronta e riporta

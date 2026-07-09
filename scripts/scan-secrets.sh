@@ -85,17 +85,17 @@ fi
 # MODE=history: cerca segreti nei commit passati
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "Non e' un repository git." >&2; exit 1; }
 echo "== Segreti negli ultimi $LIMIT commit (tutti i branch) =="
-FOUND=0
-for c in $(git rev-list --all -n "$LIMIT" 2>/dev/null); do
-  HITS="$(git grep -I -n -o -E -f "$VS_PATTERNS_EXACT" "$c" -- 2>/dev/null | vs_filter_placeholders | head -20 || true)"
-  if [ -n "$HITS" ]; then
-    printf '%s\n' "$HITS" | mask
-    FOUND=1
-  fi
-done | sort -u | head -60
+HISTORY_HITS="$(
+  for c in $(git rev-list --all -n "$LIMIT" 2>/dev/null); do
+    git grep -I -n -o -E -f "$VS_PATTERNS_EXACT" "$c" -- 2>/dev/null | vs_filter_placeholders | head -20 || true
+  done | sort -u | head -60
+)"
+if [ -n "$HISTORY_HITS" ]; then
+  printf '%s\n' "$HISTORY_HITS" | mask
+fi
 if command -v gitleaks >/dev/null 2>&1; then
   echo ""
   echo "(Suggerimento: gitleaks e' installato, per una scansione storica completa: gitleaks git .)"
 fi
-[ "$FOUND" = "0" ] && echo "Nessun segreto evidente trovato nella storia recente."
+[ -z "$HISTORY_HITS" ] && echo "Nessun segreto evidente trovato nella storia recente."
 exit 0

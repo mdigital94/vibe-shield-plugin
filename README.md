@@ -1,10 +1,64 @@
 # 🛡️ Vibe Shield
 
-**Beta sperimentale — versione 0.5.1-beta.2.** Software gratuito con [licenza MIT](LICENSE); l’uso dei modelli AI può avere costi o consumare il tuo abbonamento.
+**Controlli di sicurezza per chi sviluppa con Claude Code.**
 
-Versione 0.5.1-beta.2: gate basato sui contenuti e audit con meno analisi duplicate. I vecchi pass 0.4.x non sono riutilizzabili: serve un nuovo audit.
+Trova possibili segreti nel codice, verifica le vulnerabilità con un audit assistito dall’AI e blocca commit o pubblicazioni intercettati quando i controlli richiesti non sono superati. I risultati e le istruzioni per correggere i problemi sono in italiano.
 
-Plugin per assistere i controlli di sicurezza durante lo sviluppo e prima della pubblicazione. Combina scanner, revisione AI e blocchi nei comandi intercettati dall’host, con spiegazioni in italiano semplice. Non è una certificazione di sicurezza né una piattaforma completa di cybersecurity.
+**Beta sperimentale · 0.5.1-beta.2 · [Licenza MIT](LICENSE)**
+
+Software gratuito; l’uso dei modelli AI può avere costi o consumare il tuo abbonamento. Il plugin aiuta a ridurre i rischi, ma non garantisce la sicurezza completa di un progetto.
+
+[Installazione](#installazione-da-cli) · [Comandi](#comandi-skill) · [Verifiche e limiti](#stato-della-beta-e-contributi) · [Release](https://github.com/mdigital94/vibe-shield-plugin/releases/tag/v0.5.1-beta.2) · [Segnala una vulnerabilità](SECURITY.md)
+
+## Installazione da CLI
+
+Servono **Claude Code**, Git, Bash e Python 3.8 o successivo. Il collaudo degli hook riguarda Claude Code su macOS; le regressioni degli script girano su macOS e Linux. Windows e gli hook in altri host, incluso Codex, non sono verificati end-to-end.
+
+Dal terminale, per installare la beta disponibile sul ramo principale:
+
+```bash
+claude plugin marketplace add mdigital94/vibe-shield-plugin
+claude plugin install vibe-shield@vibe-shield-marketplace
+```
+
+Riavvia Claude Code e verifica che il plugin risponda:
+
+```text
+/vibe-shield:security-help
+```
+
+Per il primo audit del tuo progetto:
+
+```text
+/vibe-shield:security-audit
+```
+
+Prima di affidarti ai blocchi automatici, esegui il [collaudo su un progetto temporaneo](TESTING.md): la disponibilità di una skill da sola non prova che gli hook siano attivi.
+
+### Installare una versione precisa
+
+Per usare esattamente la prerelease pubblicata, invece degli aggiornamenti del ramo principale:
+
+```bash
+git clone --branch v0.5.1-beta.2 https://github.com/mdigital94/vibe-shield-plugin.git vibe-shield
+claude plugin marketplace add ./vibe-shield
+claude plugin install vibe-shield@vibe-shield-marketplace
+```
+
+Non usare un clone shallow (`--depth`): la verifica della storia Git risulterebbe incompleta. Puoi anche scaricare **Source code (zip)** dalla [release](https://github.com/mdigital94/vibe-shield-plugin/releases/tag/v0.5.1-beta.2) e aggiungere la cartella estratta come marketplace locale. Queste sono modalità alternative: se hai già registrato questo marketplace, verifica la sorgente configurata prima di cambiarla.
+
+### Dalla sessione Claude Code
+
+```text
+/plugin marketplace add mdigital94/vibe-shield-plugin
+/plugin install vibe-shield@vibe-shield-marketplace
+```
+
+Per provare una copia locale senza installazione permanente:
+
+```bash
+claude --plugin-dir /percorso/di/vibe-shield
+```
 
 ## Cosa fa
 
@@ -12,7 +66,7 @@ Tre livelli di controllo nelle sessioni in cui l’host carica ed esegue gli hoo
 
 1. **Mentre lavori**: se Claude scrive una chiave API o una password vera in un file, l’hook può segnalare il problema; la bonifica richiede poi l’intervento dell’assistente.
 2. **Al commit**: prima dei `git commit` intercettati viene controllato il contenuto destinato al commit. Se contengono segreti o file sensibili (`.env`, chiavi private, credenziali), il commit viene bloccato con le istruzioni per sistemare.
-3. **Alla pubblicazione**: `git push` e i comandi di deploy (Vercel, Netlify, Firebase, Wrangler, Fly, Railway, npm publish, gh repo create) vengono bloccati finché un audit di sicurezza non risulta completo e superato da meno di 30 minuti **e** riferito alla stessa identità del repository e dei contenuti. L'audit passa solo con zero problemi critici, alti E medi.
+3. **Alla pubblicazione**: `git push` e i comandi di deploy supportati vengono bloccati finché un audit di sicurezza non risulta completo e superato da meno di 30 minuti **e** riferito alla stessa identità del repository e dei contenuti. L'audit passa solo con zero problemi critici, alti e medi. Comandi o opzioni non supportati restano bloccati anche con audit valido; per le prerelease GitHub valgono i vincoli descritti in [TESTING.md](TESTING.md).
 
 ## Comandi (skill)
 
@@ -61,34 +115,6 @@ Gli agenti usano il modello della sessione compatibile con l’host. In più, se
 - **Ollama**: modelli open source in locale, il codice non lascia il computer, nessun consenso necessario.
 
 I pareri esterni sono consultivi: aumentano la fiducia nel risultato ma non cambiano il gate di pubblicazione, che resta quello dell'audit Vibe Shield. Nei prompt inviati all'esterno i segreti vengono sempre mascherati prima dell'invio.
-
-## Installazione
-
-Per provare questa beta scarica **Source code (zip)** dalla [prerelease v0.5.1-beta.2](https://github.com/mdigital94/vibe-shield-plugin/releases/tag/v0.5.1-beta.2), estrailo e usa l’installazione da cartella locale qui sotto. Il ramo principale può contenere una versione precedente.
-
-Dal ramo principale di GitHub:
-
-```
-/plugin marketplace add mdigital94/vibe-shield-plugin
-/plugin install vibe-shield@vibe-shield-marketplace
-```
-
-Da cartella locale:
-
-```
-/plugin marketplace add /percorso/di/questa/cartella
-/plugin install vibe-shield@vibe-shield-marketplace
-```
-
-Per sviluppo e test del plugin stesso:
-
-```
-claude --plugin-dir /percorso/di/questa/cartella
-```
-
-Dopo l’installazione riavvia la sessione e prova `/vibe-shield:security-help`. Prima di affidarti ai blocchi, esegui le prove di attivazione in [TESTING.md](TESTING.md) su un repository temporaneo: la risposta di una skill non prova che gli hook siano attivi.
-
-Primo passo consigliato su ogni progetto: esegui `/setup-security`.
 
 ## Come si sblocca un blocco
 
@@ -143,7 +169,7 @@ templates/         workflow CI GitHub Actions e dependabot, installati da /setup
 
 La precedente candidata 0.5.1-beta.1 ha superato 55 regressioni e la CI su Linux/macOS con Python 3.9/3.12, inclusa la scansione Gitleaks della storia. In una nuova sessione Claude su un progetto temporaneo, il plugin scaricato da GitHub ha consentito una lettura Git e bloccato automaticamente sia un commit con credenziale sintetica sia un push senza audit. È una prova locale con caricamento tramite `--plugin-dir`, non un’installazione da parte di un tester esterno.
 
-La 0.5.1-beta.2 aggiunge la pubblicazione controllata delle prerelease GitHub da tag verificato. L’esito della sua suite e della CI va verificato sul commit della release. Queste prove non misurano la capacità di trovare vulnerabilità nelle applicazioni.
+La **0.5.1-beta.2 ha superato 62 regressioni locali e la [CI Linux/macOS con Python 3.9/3.12](https://github.com/mdigital94/vibe-shield-plugin/actions/runs/34598749966)**, inclusa la scansione Gitleaks della storia. Aggiunge la pubblicazione controllata delle prerelease GitHub da tag verificato. Queste prove verificano i comportamenti coperti dai test e non misurano la capacità di trovare vulnerabilità nelle applicazioni.
 
 Restano da completare l’installazione da parte di un tester esterno e prove su applicazioni con vulnerabilità note. Non viene dichiarata una copertura certificata di uno stack applicativo. Windows e host diversi da Claude Code non sono collaudati end-to-end.
 

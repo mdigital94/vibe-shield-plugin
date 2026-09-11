@@ -188,6 +188,53 @@ def command_info(tokens, cwd):
     return None, cwd
 
 
+def validate_prerelease(tokens, root):
+    """Authorize only an existing, audited tag and inline metadata on its GitHub origin."""
+    args = tokens[3:]
+    if not args or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._/-]*', args[0]):
+        block('Prerelease: tag letterale obbligatorio.')
+    tag, options = args[0], {}
+    index = 1
+    while index < len(args):
+        option = args[index]
+        if option in options or option not in ('--verify-tag', '--prerelease', '--repo', '--notes', '--title'):
+            block('Prerelease: opzione o asset non supportato.')
+        if option in ('--verify-tag', '--prerelease'):
+            options[option] = True
+            index += 1
+        else:
+            if index + 1 >= len(args) or args[index + 1].startswith('-'):
+                block('Prerelease: valore letterale mancante.')
+            options[option] = args[index + 1]
+            index += 2
+    if not all(key in options for key in ('--verify-tag', '--prerelease', '--repo', '--notes')):
+        block('Prerelease: richiesti --verify-tag --prerelease --repo --notes.')
+    origin = git(root, 'remote', 'get-url', 'origin').decode().strip()
+    match = re.fullmatch(r'(?:https://github\.com/|git@github\.com:)([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?)(?:\.git)?', origin)
+    if not match or options['--repo'] != 'https://github.com/' + match.group(1):
+        block('Prerelease: repository esplicito diverso da origin GitHub.')
+    if os.environ.get('GH_HOST', 'github.com') != 'github.com':
+        block('Prerelease: host GitHub alternativo non supportato.')
+    # The explicit HTTPS --repo fixes gh repository selection, including GH_REPO overrides.
+    ref = 'refs/tags/' + tag
+    git(root, 'check-ref-format', ref)
+    object_id = git(root, 'rev-parse', '--verify', '--end-of-options', ref).strip()
+    commit = git(root, 'rev-parse', '--verify', '--end-of-options', ref + '^{commit}').strip()
+    if commit != git(root, 'rev-parse', '--verify', 'HEAD').strip():
+        block('Prerelease: il tag non identifica HEAD sottoposto ad audit.')
+    if git(root, 'status', '--porcelain', '--untracked-files=no'):
+        block('Prerelease: file tracciati modificati; commit e nuovo audit necessari.')
+    remote = git(root, 'ls-remote', '--exit-code', '--tags', 'origin', ref).splitlines()
+    if remote != [object_id + b'\t' + ref.encode()]:
+        block('Prerelease: tag remoto assente o diverso dal tag locale.')
+    metadata = (options['--notes'] + '\n' + options.get('--title', '') + '\n' + tag).encode()
+    result = subprocess.run(['grep', '-a', '-q', '-E', '-f', str(PLUGIN / 'scripts/patterns-exact.grep')],
+                            input=metadata, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if result.returncode != 1:
+        block('Prerelease: metadati con possibili segreti o scanner fallito.')
+    return object_id.decode()
+
+
 def dispatch(command, cwd, force=False):
     # Shell is not parsed as a programming language: only simple literal commands are authorized.
     hint = re.search(r'\b(push|commit|deploy|publish|vercel|surge|railway|releases:create)\b', command)
@@ -218,7 +265,8 @@ def dispatch(command, cwd, force=False):
         if hint or force:
             block('Comando di pubblicazione ambiguo/non supportato: usa un comando diretto e letterale.')
         return
-    if kind == 'deploy':
+    prerelease = [Path(tokens[0]).name, *tokens[1:3]] == ['gh', 'release', 'create']
+    if kind == 'deploy' and not prerelease:
         allowed = {('vercel',), ('vercel', 'deploy'), ('vercel', '--prod'), ('vercel', 'deploy', '--prod'),
                    ('netlify', 'deploy'), ('netlify', 'deploy', '--prod'), ('firebase', 'deploy'),
                    ('wrangler', 'deploy'), ('wrangler', 'publish'), ('fly', 'deploy'), ('flyctl', 'deploy'),
@@ -228,7 +276,7 @@ def dispatch(command, cwd, force=False):
             block('Opzioni/percorso di deploy non supportati: impossibile determinare i contenuti pubblicati.')
     root = root_for(location)
     check(root)
-    extra = []
+    extra = [validate_prerelease(tokens, root)] if prerelease else []
     if kind == 'push':
         # Include explicit source expressions, including detached/unreferenced commit IDs.
         for token in tokens[tokens.index('push') + 1:]:

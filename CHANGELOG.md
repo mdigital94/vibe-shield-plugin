@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1-beta.2 — prerelease
+
+- Supporto ristretto alle prerelease GitHub da tag locale/remoto verificato sul contenuto approvato, senza allegati.
+- Documentata la prova degli hook reali in una sessione Claude separata sulla candidata beta.1.
+- Distinte le istruzioni per scaricare la beta da quelle del ramo principale.
+- CI della beta.1 superata; collaudo umano esterno e confronto controllato dei consumi ancora da raccogliere.
+
 ## 0.5.1-beta.1 — candidata
 
 - Corretta scansione dei metadati dei tag annotati inviati con identificatore esplicito.

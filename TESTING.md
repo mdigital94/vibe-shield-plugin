@@ -74,3 +74,9 @@ Gli agenti devono ereditare il modello della sessione e rispettare gli override 
 `scan-secrets.sh .` restituisce 0 senza match, 2 con risultati, 3 se incompleto o in errore. `scan-secrets.sh --history --all` controlla la storia disponibile, segnalando incompleta una clone shallow. I valori dei segreti non sono stampati. Blob identici della storia vengono scansionati una sola volta per contenuto; nomi e allowlist restano valutati separatamente.
 
 Le prove del template CI verificano instradamento e soglia con comandi simulati. Non sostituiscono un’esecuzione su GitHub o l’accesso ai database degli scanner.
+
+### Prerelease GitHub
+
+Il gate supporta esclusivamente `gh release create TAG --verify-tag --prerelease --repo https://github.com/OWNER/REPO --notes "Testo breve"`, con titolo opzionale `--title "Titolo"`. Repository esplicito e origin devono coincidere; il tag locale deve identificare HEAD e corrispondere esattamente a quello remoto. File tracciati modificati, asset, target alternativi, note generate o lette da file, metadati con possibili segreti e opzioni non riconosciute bloccano la pubblicazione. Rimangono obbligatori audit completo e pre-deploy validi.
+
+Le prove coprono il caso valido e il rifiuto di audit assente, tag divergente, contenuti modificati, metadati rischiosi e opzioni non supportate. La verifica del tag remoto nei test automatici è simulata; durante la pubblicazione reale viene interrogato origin.

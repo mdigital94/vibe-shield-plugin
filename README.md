@@ -1,8 +1,8 @@
 # 🛡️ Vibe Shield
 
-**Beta sperimentale — versione 0.5.1-beta.1.** Software gratuito con [licenza MIT](LICENSE); l’uso dei modelli AI può avere costi o consumare il tuo abbonamento.
+**Beta sperimentale — versione 0.5.1-beta.2.** Software gratuito con [licenza MIT](LICENSE); l’uso dei modelli AI può avere costi o consumare il tuo abbonamento.
 
-Versione 0.5.1-beta.1: gate basato sui contenuti e audit con meno analisi duplicate. I vecchi pass 0.4.x non sono riutilizzabili: serve un nuovo audit.
+Versione 0.5.1-beta.2: gate basato sui contenuti e audit con meno analisi duplicate. I vecchi pass 0.4.x non sono riutilizzabili: serve un nuovo audit.
 
 Plugin per assistere i controlli di sicurezza durante lo sviluppo e prima della pubblicazione. Combina scanner, revisione AI e blocchi nei comandi intercettati dall’host, con spiegazioni in italiano semplice. Non è una certificazione di sicurezza né una piattaforma completa di cybersecurity.
 
@@ -64,7 +64,9 @@ I pareri esterni sono consultivi: aumentano la fiducia nel risultato ma non camb
 
 ## Installazione
 
-Da GitHub:
+Per provare questa beta scarica **Source code (zip)** dalla [prerelease v0.5.1-beta.2](https://github.com/mdigital94/vibe-shield-plugin/releases/tag/v0.5.1-beta.2), estrailo e usa l’installazione da cartella locale qui sotto. Il ramo principale può contenere una versione precedente.
+
+Dal ramo principale di GitHub:
 
 ```
 /plugin marketplace add mdigital94/vibe-shield-plugin
@@ -139,12 +141,14 @@ templates/         workflow CI GitHub Actions e dependabot, installati da /setup
 
 ## Stato della beta e contributi
 
-La candidata 0.5.1-beta.1 supera 55 regressioni locali. Le copie installate della precedente 0.5.0 avevano superato sei smoke test. Questo non è un benchmark della capacità di trovare vulnerabilità. Il workflow di questo repository prepara regressioni su Linux/macOS e Python 3.9/3.12, con scansione della storia Git: il suo esito va verificato su GitHub prima del rilascio.
+La precedente candidata 0.5.1-beta.1 ha superato 55 regressioni e la CI su Linux/macOS con Python 3.9/3.12, inclusa la scansione Gitleaks della storia. In una nuova sessione Claude su un progetto temporaneo, il plugin scaricato da GitHub ha consentito una lettura Git e bloccato automaticamente sia un commit con credenziale sintetica sia un push senza audit. È una prova locale con caricamento tramite `--plugin-dir`, non un’installazione da parte di un tester esterno.
 
-Restano da completare il collaudo automatico degli hook nell’host reale, un’installazione da parte di un tester esterno e prove su applicazioni con vulnerabilità note. Non viene dichiarata una copertura certificata di uno stack applicativo. Windows e host diversi da Claude Code non sono collaudati end-to-end.
+La 0.5.1-beta.2 aggiunge la pubblicazione controllata delle prerelease GitHub da tag verificato. L’esito della sua suite e della CI va verificato sul commit della release. Queste prove non misurano la capacità di trovare vulnerabilità nelle applicazioni.
+
+Restano da completare l’installazione da parte di un tester esterno e prove su applicazioni con vulnerabilità note. Non viene dichiarata una copertura certificata di uno stack applicativo. Windows e host diversi da Claude Code non sono collaudati end-to-end.
 
 Per contribuire vedi [CONTRIBUTING.md](CONTRIBUTING.md), per le novità [CHANGELOG.md](CHANGELOG.md). Segnala problemi ordinari nelle [issue](https://github.com/mdigital94/vibe-shield-plugin/issues); per vulnerabilità del plugin segui [SECURITY.md](SECURITY.md). Non caricare log integrali, credenziali o codice privato.
 
-### Candidata 0.5.1-beta.1
+### Candidata 0.5.1-beta.2
 
 La candidata include il controllo dei tag annotati inviati tramite identificatore esplicito, la scansione dei riferimenti Git a tree/blob (compresi checkpoint locali) e l’invalidazione del pass quando cambia codice applicativo dentro `.vibe-shield/`. Le misurazioni private delle esecuzioni reali distinguono input, scrittura/lettura cache e output: non costituiscono un confronto controllato del risparmio tra versioni.

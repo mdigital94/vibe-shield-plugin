@@ -2,7 +2,7 @@
   "name": "vibe-shield",
   "displayName": "Vibe Shield",
   "description": "Controlli di sicurezza assistiti: scanner, revisione AI mirata, verifica indipendente e blocchi di commit/pubblicazione legati ai contenuti controllati.",
-  "version": "0.5.1-beta.1",
+  "version": "0.5.1-beta.2",
   "author": {
     "name": "Matteo Di Lorenzo"
   },

@@ -1,10 +1,12 @@
 import json
+import importlib.util
 import os
 from pathlib import Path
 import subprocess
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 PLUGIN = Path(__file__).resolve().parents[1]
 GATE = PLUGIN / 'scripts/gate.py'
@@ -52,6 +54,85 @@ class GateTests(unittest.TestCase):
 
     def dispatch(self, command, cwd=None):
         return self.gate('dispatch', input=json.dumps({'cwd': str(cwd or self.repo), 'tool_input': {'command': command}}))
+
+    def prepare_release(self, message='beta'):
+        self.git('remote', 'add', 'origin', 'https://github.com/example/project.git')
+        self.git('tag', '-a', 'v1-beta', '-m', message)
+        self.release_oid = self.git('rev-parse', 'refs/tags/v1-beta').stdout.strip()
+        spec = importlib.util.spec_from_file_location('release_gate', GATE)
+        self.release_gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.release_gate)
+        self.release_command = ('gh release create v1-beta --verify-tag --prerelease '
+                                '--repo https://github.com/example/project --notes "Beta candidate"')
+
+    def release_dispatch(self, command=None, remote_oid=None):
+        original_run = subprocess.run
+        def run(args, **kwargs):
+            if args[0] == 'git' and 'ls-remote' in args:
+                self.assertEqual(args[-4:], ['--exit-code', '--tags', 'origin', 'refs/tags/v1-beta'])
+                output = (remote_oid or self.release_oid) + b'\trefs/tags/v1-beta\n'
+                return subprocess.CompletedProcess(args, 0, output, b'')
+            return original_run(args, **kwargs)
+        with mock.patch.object(self.release_gate.subprocess, 'run', side_effect=run):
+            self.release_gate.dispatch(command or self.release_command, self.repo)
+
+    def test_prerelease_existing_audited_tag_allows_source_only(self):
+        self.prepare_release()
+        self.approve()
+        self.release_dispatch()
+
+    def test_prerelease_requires_audit(self):
+        self.prepare_release()
+        with self.assertRaisesRegex(ValueError, 'audit assente'):
+            self.release_dispatch()
+
+    def test_prerelease_rejects_options_assets_and_other_repository(self):
+        self.prepare_release()
+        self.approve()
+        for suffix in (' --target master', ' --generate-notes', ' asset.zip', ' --draft', ' --prerelease'):
+            with self.subTest(suffix=suffix), self.assertRaises(ValueError):
+                self.release_dispatch(self.release_command + suffix)
+        for command in (self.release_command.replace('example/project', 'other/project'),
+                        self.release_command.replace(' --verify-tag', ''),
+                        self.release_command.replace(' --prerelease', '')):
+            with self.subTest(command=command), self.assertRaises(ValueError):
+                self.release_dispatch(command)
+
+    def test_prerelease_requires_tag_at_head(self):
+        self.prepare_release()
+        self.git('commit', '--allow-empty', '-qm', 'next')
+        self.approve()
+        with self.assertRaisesRegex(ValueError, 'non identifica HEAD'):
+            self.release_dispatch()
+
+    def test_prerelease_requires_identical_remote_tag(self):
+        self.prepare_release()
+        self.approve()
+        with self.assertRaisesRegex(ValueError, 'tag remoto'):
+            self.release_dispatch(remote_oid=b'0' * 40)
+
+    def test_prerelease_rejects_audited_dirty_tracked_state(self):
+        self.prepare_release()
+        for staged in (False, True):
+            with self.subTest(staged=staged):
+                (self.repo / 'file').write_text('safe change')
+                if staged:
+                    self.git('add', 'file')
+                self.approve()
+                with self.assertRaisesRegex(ValueError, 'file tracciati modificati'):
+                    self.release_dispatch()
+
+    def test_prerelease_scans_inline_notes_and_tag_metadata(self):
+        self.prepare_release()
+        self.approve()
+        command = self.release_command.replace('Beta candidate', 'AKIA' + 'Z' * 16)
+        with self.assertRaisesRegex(ValueError, 'metadati'):
+            self.release_dispatch(command)
+        self.git('tag', '-f', '-a', 'v1-beta', '-m', 'AKIA' + 'Z' * 16)
+        self.release_oid = self.git('rev-parse', 'refs/tags/v1-beta').stdout.strip()
+        self.approve()
+        with self.assertRaisesRegex(ValueError, 'oggetti Git'):
+            self.release_dispatch()
 
     def test_wrapper_maps_runtime_failure_to_blocking_exit(self):
         bin_dir = Path(self.temp.name) / 'fake-bin'

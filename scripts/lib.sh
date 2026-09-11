@@ -73,11 +73,11 @@ vs_filter_allowlist() {
     printf '' | grep -E "$line" >/dev/null 2>&1
     rc=$?
     if [ "$rc" = "2" ]; then
-      echo "⚠️ VIBE SHIELD: pattern allowlist non valido, ignorato: $line" >&2
+      echo "⚠️ VIBE SHIELD: pattern allowlist non valido, ignorato" >&2
       continue
     fi
     if printf 'VIBE_SHIELD_CANARIO_9f3a7c21_non_e_un_segreto_reale' | grep -qE "$line" 2>/dev/null; then
-      echo "⚠️ VIBE SHIELD: pattern allowlist troppo ampio, rifiutato per sicurezza: $line" >&2
+      echo "⚠️ VIBE SHIELD: pattern allowlist troppo ampio, rifiutato per sicurezza" >&2
       continue
     fi
     ok="$ok

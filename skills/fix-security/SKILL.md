@@ -17,6 +17,14 @@ Correggi i problemi di sicurezza del progetto partendo dal report dell'ultimo au
 
 ### 2. Applica i fix, uno alla volta
 
+Prima di qualsiasi modifica, dalla radice del repository invalida il pass precedente:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/write-status.sh" incomplete 0 0 0 0
+```
+
+Se l’invalidazione fallisce, risolvi l’errore prima di continuare; un giro di correzioni interrotto non deve lasciare un vecchio via libera.
+
 Procedi dal CRITICO al BASSO. Per ogni finding:
 
 **Se AUTO_FIX = SI**, applica direttamente. Esempi di fix considerati sicuri:
@@ -43,11 +51,7 @@ Dopo ogni gruppo di fix:
 ### 4. Chiudi il giro
 
 1. Aggiorna `.vibe-shield/report.md` marcando ogni finding come RISOLTO, RESPINTO (fix fallito, spiegare) o IN ATTESA DI DECISIONE.
-2. Se restano zero critici, zero alti e zero medi, riesegui il gate:
-   ```
-   bash "${CLAUDE_SKILL_DIR}/../../scripts/write-status.sh" pass <critici> <alti> <medi> <bassi>
-   ```
-   Altrimenti scrivi `fail` con i conteggi aggiornati.
+2. Riesegui gli scanner e le verifiche dei rischi coinvolti, poi `security-audit` con ambito completo prima di un nuovo pass. Riusa inventario e prove utili come contesto, ma verifica di nuovo la copertura sull’identità attuale: marcare finding come RISOLTO o azzerare i conteggi non autorizza a scrivere pass. Se restano problemi scrivi `fail` con i conteggi aggiornati; se la verifica o la copertura non è completa lascia `incomplete`. Per pubblicare completa anche `pre-deploy`.
 3. Riassumi in italiano semplice: cosa hai corretto (con il perché in una frase ciascuno), cosa resta da decidere e qual è il prossimo passo. Se resta qualcosa di critico, alto o medio, di' chiaramente che il progetto non va ancora pubblicato.
 
 ## Regole

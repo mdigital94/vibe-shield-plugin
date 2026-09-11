@@ -27,7 +27,10 @@ case "$FILE" in
   */node_modules/*|*/.git/*|*/dist/*|*/build/*|*/.next/*|*/vendor/*) exit 0 ;;
 esac
 SIZE="$(wc -c < "$FILE" 2>/dev/null || echo 0)"
-[ "$SIZE" -gt 500000 ] && exit 0
+if [ "$SIZE" -gt 500000 ]; then
+  echo "⚠️ VIBE SHIELD: controllo immediato incompleto (file grande); esegui secrets-scan prima del commit." >&2
+  exit 2
+fi
 
 BASENAME="$(basename "$FILE")"
 
@@ -35,7 +38,13 @@ BASENAME="$(basename "$FILE")"
 case "$BASENAME" in
   .env|.env.*)
     case "$BASENAME" in
-      .env.example|.env.sample|.env.template|.env.dist) exit 0 ;;
+      .env.example|.env.sample|.env.template|.env.dist)
+        # Template names are safe; credentials inside them still need scanning.
+        if grep -a -o -E -f "$VS_PATTERNS_EXACT" "$FILE" 2>/dev/null | vs_filter_placeholders | vs_filter_allowlist | grep -q .; then
+          echo "⚠️ VIBE SHIELD: possibile segreto nel template; sostituiscilo con un placeholder." >&2
+          exit 2
+        fi
+        exit 0 ;;
     esac
     DIR="$(dirname "$FILE")"
     if git -C "$DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then

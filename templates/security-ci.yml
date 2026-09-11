@@ -30,11 +30,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-      - name: npm audit (progetti Node)
-        if: ${{ hashFiles('package-lock.json') != '' }}
-        run: npm audit --audit-level=high
-      - name: pip-audit (progetti Python)
-        if: ${{ hashFiles('requirements.txt') != '' }}
+      - name: Audit dipendenze e verifica copertura
+        # Template conservativo: npm e requirements.txt, anche in sottocartelle.
+        # setup-security deve adattarlo per altri gestori, senza rimuovere il controllo copertura.
         run: |
-          python -m pip install --quiet pip-audit==2.9.0
-          pip-audit -r requirements.txt
+          python3 - <<'PY_AUDIT'
+          import pathlib
+          import subprocess
+          import sys
+
+          root = pathlib.Path.cwd()
+          tracked = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+          paths = {pathlib.PurePosixPath(p) for p in tracked if p}
+          npm_roots = {p.parent for p in paths if p.name in {'package-lock.json', 'npm-shrinkwrap.json'}}
+          requirements = sorted(p for p in paths if p.name == 'requirements.txt')
+          unsupported = []
+          for path in sorted(paths):
+              if path.name == 'package.json' and not any(folder == path.parent or folder in path.parents for folder in npm_roots):
+                  unsupported.append(path)
+              elif path.name in {'pnpm-lock.yaml', 'yarn.lock', 'pyproject.toml', 'Pipfile', 'poetry.lock', 'uv.lock', 'go.mod', 'Cargo.toml', 'Gemfile', 'composer.json', 'pom.xml', 'build.gradle', 'build.gradle.kts', 'packages.config'} or path.suffix in {'.csproj', '.fsproj'}:
+                  unsupported.append(path)
+          if unsupported:
+              print('Controllo dipendenze INCOMPLETO: adatta il workflow ai manifest rilevati:')
+              for path in unsupported:
+                  print(repr(str(path)))
+              sys.exit(1)
+          if not npm_roots and not requirements:
+              print('Nessun manifest dei tipi riconosciuti: dipendenze non applicabili solo se confermato durante setup-security.')
+          for folder in sorted(npm_roots):
+              subprocess.run(['npm', 'audit', '--audit-level=moderate'], cwd=root / folder, check=True)
+          if requirements:
+              subprocess.run([sys.executable, '-m', 'pip', 'install', '--quiet', 'pip-audit==2.9.0'], check=True)
+              for path in requirements:
+                  subprocess.run(['pip-audit', '-r', path.name], cwd=root / path.parent, check=True)
+          PY_AUDIT

@@ -10,3 +10,7 @@ node_modules/
 handoff.md
 desiderata.md
 tasks/
+
+# Python runtime/test caches
+__pycache__/
+*.py[cod]

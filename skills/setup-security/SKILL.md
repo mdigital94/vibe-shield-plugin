@@ -11,6 +11,8 @@ Porta il progetto corrente a uno stato di sicurezza di base, in una sola passata
 
 ### 1. Rileva lo stack
 
+Verifica che Python 3 e Git siano disponibili: sono necessari ai blocchi locali. Se mancano, segnala copertura incompleta e completa il setup prima di dichiarare i controlli attivi.
+
 Leggi package.json, requirements.txt, file di config presenti, struttura cartelle. Adatta i passi seguenti a ciò che trovi: non aggiungere protezioni per tecnologie che il progetto non usa.
 
 ### 2. Fondamenta (per qualsiasi progetto)
@@ -46,7 +48,10 @@ Leggi package.json, requirements.txt, file di config presenti, struttura cartell
 - Se il progetto è (o sarà) su GitHub, copia i template del plugin:
   - `${CLAUDE_SKILL_DIR}/../../templates/dependabot.yml` in `.github/dependabot.yml` (aggiornamenti di sicurezza automatici delle dipendenze; togli gli ecosistemi che il progetto non usa)
   - `${CLAUDE_SKILL_DIR}/../../templates/security-ci.yml` in `.github/workflows/security.yml` (scansione segreti e dipendenze a ogni push, anche quando le modifiche non passano da Claude Code)
-- Suggerisci di attivare il secret scanning del repo nelle impostazioni GitHub.
+- Adatta SEMPRE il controllo dipendenze ai manifest, ai gestori e alle cartelle rilevati. Il template esegue npm e requirements.txt anche in sottocartelle, ma blocca con copertura incompleta per i manifest riconosciuti di altri ecosistemi. Aggiungi gli scanner appropriati per pnpm/Yarn, pyproject/lock Python, Go, Rust, Java, .NET o altri stack: non rimuovere il controllo per ottenere un verde. Per un progetto senza dipendenze registra esplicitamente “non applicabile” e il perimetro verificato.
+- Mantieni la soglia dei problemi MEDI coerente con il gate locale, verifica che gli scanner partano davvero e che errori di rete/tool producano un controllo fallito, non un esito pulito.
+- Configura gli aggiornamenti Dependabot per ciascuna directory/gestore effettivamente presente.
+- Suggerisci di attivare il secret scanning del repo nelle impostazioni GitHub. Spiega che la CI a ogni push rileva problemi dopo l’invio: per impedire un merge servono controlli richiesti nelle protezioni del branch, e per fermare segreti prima dell’invio serve una protezione push appropriata.
 
 ### 4. Verifica e riepilogo
 

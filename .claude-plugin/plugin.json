@@ -1,11 +1,17 @@
 {
   "name": "vibe-shield",
   "displayName": "Vibe Shield",
-  "description": "Blindatura di sicurezza automatica per qualsiasi progetto, dal vibe coding allo sviluppo professionale: scansione segreti, audit vulnerabilità con verifica incrociata, blocco automatico di commit e deploy a rischio, fix guidati spiegati in linguaggio semplice.",
-  "version": "0.4.0",
+  "description": "Controlli di sicurezza assistiti: scanner, revisione AI mirata, verifica indipendente e blocchi di commit/pubblicazione legati ai contenuti controllati.",
+  "version": "0.5.1-beta.1",
   "author": {
     "name": "Matteo Di Lorenzo"
   },
   "license": "MIT",
-  "keywords": ["security", "secrets", "audit", "owasp", "vibe-coding"]
+  "keywords": [
+    "security",
+    "secrets",
+    "audit",
+    "owasp",
+    "vibe-coding"
+  ]
 }

@@ -11,7 +11,7 @@ Aiuta l'utente a capire la protezione Vibe Shield e i concetti di sicurezza che 
 
 - **Mentre lavori**: se in un file viene scritta una chiave o password vera, arriva subito un avviso e viene sistemata.
 - **Al commit** (il "salvataggio" nella storia del progetto): se tra i file ci sono segreti o file sensibili, il commit si ferma finché non vengono messi al sicuro.
-- **Alla pubblicazione** (push su GitHub o deploy online): serve aver superato il controllo completo `pre-deploy` da meno di 30 minuti (o sullo stesso codice). Il controllo passa solo senza problemi critici, alti o medi, e ogni problema trovato viene ricontrollato da un secondo agente indipendente prima di contare. Se manca il via libera, la pubblicazione si ferma.
+- **Alla pubblicazione** (push su GitHub o deploy online): serve aver superato il controllo completo `pre-deploy` da meno di 30 minuti e sugli stessi contenuti verificati. Il controllo passa solo senza problemi critici, alti o medi, e ogni problema medio o superiore viene ricontrollato da un verificatore indipendente, per piccoli gruppi correlati. Se manca il via libera, la pubblicazione si ferma.
 - **Comandi disponibili**: `security-audit` (controllo completo), `secrets-scan` (solo chiavi e password), `fix-security` (corregge i problemi trovati), `pre-deploy` (via libera alla pubblicazione), `setup-security` (protezioni di base su un progetto nuovo).
 
 ## Mini glossario (usa queste spiegazioni)

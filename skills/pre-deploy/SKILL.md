@@ -1,44 +1,67 @@
 ---
 name: pre-deploy
-description: Gate finale prima di pubblicare online o caricare su GitHub: audit completo, controlli specifici da deploy e apertura del blocco su push e deploy. Usalo quando l'utente vuole pubblicare, deployare, mettere online o caricare il progetto, o quando l'hook di Vibe Shield ha bloccato un push.
+description: Gate finale prima di pubblicare online o caricare su GitHub. Riusa solo un audit completo valido dello stesso contenuto, esegue controlli extra e lascia il gate bloccato finché non sono completati.
 ---
 
 # Pre-Deploy
 
-Sei il controllo finale prima che il progetto vada online. Il push o il deploy restano bloccati dall'hook di Vibe Shield finché questo gate non risulta superato. L'utente non ha competenze tecniche: guida tu tutto il processo.
+Completa il controllo finale della pubblicazione, spiegando gli esiti in italiano semplice. Lavora dalla radice del repository che verrà pubblicato. Non usare il pass di un altro progetto e non interpretare direttamente il JSON con regole alternative a quelle dello script.
 
 ## Procedura
 
-### 1. Audit completo
+### 1. Audit completo valido
 
-- Se esiste un audit fresco e superato (`.vibe-shield/status.json` con result `pass`, stesso commit o più recente di 30 minuti) puoi riusarlo.
-- Altrimenti esegui la skill `security-audit` per intero (4 agenti in parallelo, report, gate).
+Controlla se puoi riusare un audit completo con:
 
-### 2. Controlli extra da deploy
+```bash
+python3 "${CLAUDE_SKILL_DIR}/../../scripts/gate.py" --check
+```
 
-Oltre all'audit, verifica questi punti specifici della pubblicazione:
+Solo exit code zero autorizza il riuso. Il controllo richiede meno di 30 minuti **e** identità invariata del repository e dei contenuti. Il solo HEAD uguale o un timestamp recente non bastano. Se cambia lo stack, il database advisory o una configurazione remota rilevante, oppure il report precedente ha lacune, richiedi comunque nuova verifica: la cache locale non prova lo stato di sistemi esterni.
 
-1. **.gitignore efficace**: `.env` e i file sensibili risultano davvero ignorati (`git status` non li mostra, `git ls-files` non li contiene).
-2. **Cosa finisce online**: controlla che nella cartella pubblicata non ci siano file di troppo (dump, backup, note con credenziali, cartelle di test). Per siti statici: il publish dir non contiene .env o .git.
-3. **Variabili d'ambiente in produzione**: elenca all'utente le variabili che dovrà configurare sul pannello della piattaforma (Vercel, Netlify, ecc.), perché il .env locale non viene caricato. Spiega dove si fa, in breve.
-4. **Build**: se il progetto ha un comando di build, eseguilo e verifica che vada a buon fine.
-5. **Repo pubblico o privato**: se l'utente sta creando un repo GitHub, chiedi se dev'essere pubblico o privato e spiega la differenza in una frase.
+Se non è valido, esegui `security-audit` completo. Un audit parziale o incompleto non basta. Se fallisce, interrompi la pubblicazione e lascia il gate fail/incomplete; non procedere verso un pass con conteggi inventati.
+
+### 2. Invalida durante i controlli extra
+
+Prima degli extra sospendi il pass preservando l’identità e la scadenza dell’audit appena validato:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/write-status.sh" begin --reuse
+```
+
+Procedi solo se il comando riesce. Non usare un nuovo `begin` per rinnovare la scadenza di un audit riusato. Da qui un’interruzione lascia il gate incompleto.
+
+Verifica:
+
+1. **File sensibili**: `.env` e credenziali locali correttamente ignorati e non tracciati. Controlla Git e la destinazione effettiva; non assumere che `.gitignore` rimuova file già tracciati.
+2. **Contenuto pubblicato**: cartella di output e regole di inclusione non devono pubblicare `.env`, `.git`, dump o backup sensibili. Esamina il risultato della build, non solo i sorgenti.
+3. **Variabili in produzione**: verifica o indica le variabili necessarie sulla piattaforma, senza mostrarne i valori. Se una configurazione necessaria alla sicurezza non può essere verificata, registra la lacuna e lascia incomplete.
+4. **Build**: esegui il comando di build del progetto, se pertinente, e controlla esito e output pubblicato. Build fallita o non verificabile non autorizza pass.
+5. **Destinazione**: conferma dalla richiesta quale repository/piattaforma e quale visibilità sono voluti. Chiedi solo scelte non già espresse che richiedono l’utente.
+
+Se la build o altri passaggi cambiano contenuti coperti dallo snapshot, ripeti l’audit completo sullo stato risultante; non catturare semplicemente uno snapshot nuovo per convalidare modifiche mai esaminate.
 
 ### 3. Esito
 
-**Se tutto è a posto (zero critici, zero alti, zero medi dopo la verifica incrociata):**
-1. Assicurati che il gate sia scritto:
-   ```
-   bash "${CLAUDE_SKILL_DIR}/../../scripts/write-status.sh" pass <critici> <alti> <medi> <bassi>
-   ```
-2. Comunica in italiano semplice: "🟢 Controllo superato, puoi pubblicare. Il via libera vale 30 minuti o finché non modifichi il codice; dopo, rilancia questo controllo." Poi ricorda le variabili d'ambiente da impostare sulla piattaforma, se ce ne sono.
+Solo dopo audit completo valido, extra completati, copertura completa e zero critici/alti/medi:
 
-**Se ci sono problemi critici, alti o medi:**
-1. NON scrivere il gate come pass.
-2. Spiega i problemi in italiano semplice, uno per uno: cosa rischia in pratica se pubblica così.
-3. Proponi di eseguire subito la skill `fix-security` e, a fix completati, rilancia questo gate.
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/write-status.sh" pass 0 0 0 <bassi> --scope full --complete
+python3 "${CLAUDE_SKILL_DIR}/../../scripts/gate.py" --check
+```
+
+Entrambi i comandi devono riuscire. Il riuso non prolunga i 30 minuti dell’audit originario. Comunica il via libera riferito ai contenuti controllati e alla finestra residua, senza garantire sicurezza assoluta; ricorda eventuali variabili da configurare.
+
+Con problemi bloccanti, scrivi immediatamente:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/write-status.sh" fail <critici> <alti> <medi> <bassi>
+```
+
+Con controllo mancante, interrotto, errore o contenuti cambiati, scrivi invece `incomplete` con i conteggi noti. Zero finding noti non significa controllo completo. Aggiorna il report con extra effettuati, errori e lacune. Spiega il blocco concreto e, se pertinente, indica `fix-security` seguito da nuovo pre-deploy.
 
 ## Regole
 
-- Il gate `pass` si scrive SOLO con zero critici, zero alti e zero medi reali (confermati o incerti dopo la verifica incrociata). Mai scriverlo per far passare un push "perché l'utente ha fretta": il blocco esiste per proteggerlo. Se l'utente insiste per pubblicare comunque, spiega il rischio concreto e digli che esiste la variabile VIBE_SHIELD_SKIP=1 come scelta sua e consapevole; non usarla tu di iniziativa.
-- Non mostrare mai valori di segreti.
+- Mai scrivere pass per fretta, azzeramento manuale dei conteggi o vecchia approvazione. Gli esiti incerti medi o superiori bloccano.
+- Non usare `VIBE_SHIELD_SKIP=1` di iniziativa. Se l’utente insiste, spiega il rischio concreto e la possibilità di scelta consapevole senza descriverla come un controllo superato.
+- Non mostrare valori di segreti. Gli hook dipendono dall’host e dai comandi intercettati: controlla che siano effettivamente attivi, senza dedurlo dalla sola disponibilità della skill.

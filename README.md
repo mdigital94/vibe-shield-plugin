@@ -1,20 +1,24 @@
 # 🛡️ Vibe Shield
 
-Plugin di Claude Code che blinda automaticamente qualsiasi progetto prima che finisca online o su GitHub: dal vibe coding allo sviluppo professionale. Controlla, blocca e corregge, spiegando tutto in italiano semplice, comprensibile anche a chi non ha competenze tecniche.
+**Beta sperimentale — versione 0.5.1-beta.1.** Software gratuito con [licenza MIT](LICENSE); l’uso dei modelli AI può avere costi o consumare il tuo abbonamento.
+
+Versione 0.5.1-beta.1: gate basato sui contenuti e audit con meno analisi duplicate. I vecchi pass 0.4.x non sono riutilizzabili: serve un nuovo audit.
+
+Plugin per assistere i controlli di sicurezza durante lo sviluppo e prima della pubblicazione. Combina scanner, revisione AI e blocchi nei comandi intercettati dall’host, con spiegazioni in italiano semplice. Non è una certificazione di sicurezza né una piattaforma completa di cybersecurity.
 
 ## Cosa fa
 
-Tre livelli di protezione, sempre attivi dopo l'installazione:
+Tre livelli di controllo nelle sessioni in cui l’host carica ed esegue gli hook:
 
-1. **Mentre lavori**: se Claude scrive una chiave API o una password vera in un file, scatta subito un avviso e il problema viene corretto (segreto spostato in `.env`).
-2. **Al commit**: prima di ogni `git commit` i file vengono scansionati. Se contengono segreti o file sensibili (`.env`, chiavi private, credenziali), il commit viene bloccato con le istruzioni per sistemare.
-3. **Alla pubblicazione**: `git push` e i comandi di deploy (Vercel, Netlify, Firebase, Wrangler, Fly, Railway, npm publish, gh repo create) vengono bloccati finché un audit di sicurezza completo non risulta superato da meno di 30 minuti (o sullo stesso commit). L'audit passa solo con zero problemi critici, alti E medi.
+1. **Mentre lavori**: se Claude scrive una chiave API o una password vera in un file, l’hook può segnalare il problema; la bonifica richiede poi l’intervento dell’assistente.
+2. **Al commit**: prima dei `git commit` intercettati viene controllato il contenuto destinato al commit. Se contengono segreti o file sensibili (`.env`, chiavi private, credenziali), il commit viene bloccato con le istruzioni per sistemare.
+3. **Alla pubblicazione**: `git push` e i comandi di deploy (Vercel, Netlify, Firebase, Wrangler, Fly, Railway, npm publish, gh repo create) vengono bloccati finché un audit di sicurezza non risulta completo e superato da meno di 30 minuti **e** riferito alla stessa identità del repository e dei contenuti. L'audit passa solo con zero problemi critici, alti E medi.
 
 ## Comandi (skill)
 
 | Comando | Cosa fa |
 | --- | --- |
-| `/security-audit` | Audit completo con 4 agenti in parallelo (segreti, codice OWASP Top 10, dipendenze, configurazioni) più verifica incrociata: ogni problema trovato viene ricontrollato da un agente indipendente che cerca di smentirlo. Report in italiano semplice. |
+| `/security-audit` | Scanner prima dell’AI, revisione semantica e specialisti quando servono. Verifica indipendente dei problemi medi o superiori per piccoli gruppi correlati. Report con copertura esplicita; gli audit parziali non sbloccano il gate. |
 | `/pre-deploy` | Il via libera alla pubblicazione: audit più controlli specifici da deploy. Apre il blocco su push e deploy. |
 | `/fix-security` | Corregge i problemi trovati: applica da solo i fix sicuri, spiega quelli che richiedono una tua decisione. |
 | `/secrets-scan` | Ricerca e bonifica guidata di chiavi e password esposte, anche nella storia git. |
@@ -38,15 +42,20 @@ I comandi sono namespaced dal plugin: se il nome corto non risponde, usa la form
 
 ## Modelli usati
 
-Gli agenti di audit NON usano il modello della sessione: sono configurati sul modello migliore disponibile (campo `model: fable` nel frontmatter di ogni file in `agents/`). Questo garantisce che le verifiche di sicurezza girino sempre al massimo livello, anche se nella sessione stai usando un modello più veloce.
+Gli agenti ereditano il modello configurato nella sessione; il plugin non impone un modello più costoso. Un modello esplicitamente richiesto per l’audit viene passato come override, se supportato dall’host. La scelta del modello non dimostra da sola la qualità dell’audit.
 
-- **Cambiare modello per sempre**: modifica il campo `model:` nei file `agents/*.md` (valori: `fable`, `opus`, `sonnet`, `haiku` o un ID modello completo).
-- **Cambiare modello per un singolo audit**: chiedilo e basta, ad esempio "fai l'audit con Opus": la skill passa l'override agli agenti.
-- **Se il modello configurato non è disponibile** per il tuo account, gli agenti vengono rilanciati con il modello della sessione e la cosa ti viene segnalata.
+### Come limita il consumo di token
+
+- Ricognizione unica e scanner deterministici prima della revisione AI; nel contesto entrano risultati sintetici.
+- Specialisti attivati per compiti utili, senza quattro agenti obbligatori per ogni progetto.
+- Verificatore indipendente per gruppi di uno–quattro problemi correlati, con un verdetto per ciascuno.
+- Pre-deploy riusa un audit completo valido dello stesso contenuto entro la finestra di 30 minuti. Un cambio dei contenuti richiede una nuova valutazione completa.
+
+Questi interventi riducono il lavoro duplicato; il risparmio non è ancora misurato. Il report registra copertura e deleghe; durata e token solo quando l’host li fornisce. Scanner indisponibili, database irraggiungibili o budget esaurito producono un controllo incompleto, mai un’approvazione. L’analisi selettiva delle modifiche non autorizza l’intero progetto.
 
 ### Secondo parere di altri provider (opzionale, spento di default)
 
-Gli agenti del plugin girano su modelli Claude (è un plugin di Claude Code). In più, se sul computer hai installato i CLI di altri provider, puoi chiedere un secondo parere esterno con `/second-opinion` (o dicendo ad esempio "chiedi anche a Gemini"):
+Gli agenti usano il modello della sessione compatibile con l’host. In più, se sul computer hai installato i CLI di altri provider, puoi chiedere un secondo parere esterno con `/second-opinion` (o dicendo ad esempio "chiedi anche a Gemini"):
 
 - **Gemini CLI** (Google) e **Codex CLI** (OpenAI): revisori cloud. Prima dell'invio ti viene chiesto il consenso, perché estratti del tuo codice vanno anche ai loro server.
 - **Ollama**: modelli open source in locale, il codice non lascia il computer, nessun consenso necessario.
@@ -55,10 +64,10 @@ I pareri esterni sono consultivi: aumentano la fiducia nel risultato ma non camb
 
 ## Installazione
 
-Da GitHub (dopo aver pubblicato questo repo):
+Da GitHub:
 
 ```
-/plugin marketplace add <owner>/<repo>
+/plugin marketplace add mdigital94/vibe-shield-plugin
 /plugin install vibe-shield@vibe-shield-marketplace
 ```
 
@@ -75,25 +84,27 @@ Per sviluppo e test del plugin stesso:
 claude --plugin-dir /percorso/di/questa/cartella
 ```
 
+Dopo l’installazione riavvia la sessione e prova `/vibe-shield:security-help`. Prima di affidarti ai blocchi, esegui le prove di attivazione in [TESTING.md](TESTING.md) su un repository temporaneo: la risposta di una skill non prova che gli hook siano attivi.
+
 Primo passo consigliato su ogni progetto: esegui `/setup-security`.
 
 ## Come si sblocca un blocco
 
 - **Commit bloccato**: segui le istruzioni mostrate (spostare i segreti in `.env`, togliere i file sensibili dallo stage), poi ripeti il commit. Per la bonifica guidata: `/secrets-scan`.
-- **Push o deploy bloccato**: esegui `/pre-deploy`. Se l'audit passa, hai 30 minuti (o lo stesso commit) per pubblicare.
+- **Push o deploy bloccato**: esegui `/pre-deploy`. Se l'audit passa, puoi pubblicare entro 30 minuti, solo finché identità e contenuti controllati restano invariati. Un errore nei controlli extra invalida il pass precedente.
 - **Emergenza consapevole**: la variabile d'ambiente `VIBE_SHIELD_SKIP=1` disattiva i blocchi per un singolo comando. Usala solo sapendo cosa stai facendo: i blocchi esistono per proteggerti.
 
 ## File di lavoro
 
-Il plugin scrive nel progetto una cartella `.vibe-shield/` (auto aggiunta al `.gitignore`):
+Il plugin scrive nel progetto una cartella `.vibe-shield/` (da escludere tramite `.gitignore`, come previsto da `/setup-security`):
 
 - `report.md`: l'ultimo report di audit completo.
-- `status.json`: il gate che sblocca push e deploy (`result`, commit, data, conteggio problemi).
-- `allowlist` (opzionale, lo crei tu o Claude su tua richiesta): un'espressione regolare per riga; i match che corrispondono vengono considerati falsi allarmi accettati e non bloccano più. Righe che iniziano con `#` sono commenti. Da usare con giudizio: serve per i falsi positivi ricorrenti, non per zittire problemi veri.
+- `status.json`: il gate che sblocca push e deploy (esito, copertura, data, identità del repository e dei contenuti, conteggio problemi). È uno stato locale, non una firma o una prova contro manomissioni da parte di chi può scrivere sul filesystem.
+- `allowlist` (opzionale, lo crei tu o Claude su tua richiesta): un'espressione regolare per riga, applicata ai controlli commit e allo scanner guidato. Il controllo finale di pubblicazione è conservativo e non applica queste eccezioni. Righe che iniziano con `#` sono commenti. Da usare con giudizio: serve per i falsi positivi ricorrenti, non per zittire problemi veri.
 
 ## Protezione anche fuori da Claude Code
 
-Gli hook proteggono solo ciò che passa da Claude Code. Per coprire modifiche fatte da editor, dal sito di GitHub o da altri collaboratori, `/setup-security` installa nel progetto anche:
+Gli hook operano solo sui tool e comandi intercettati dall’host. La presenza delle skill in Codex o in un altro host non dimostra che gli hook Claude Code vengano eseguiti: va collaudata nell’host reale. Terminali esterni, alias, script intermedi e tool non intercettati possono restare fuori dal controllo. Per coprire modifiche fatte da editor, dal sito di GitHub o da altri collaboratori, `/setup-security` installa nel progetto anche:
 
 - `.github/workflows/security.yml`: scansione segreti (gitleaks) e vulnerabilità delle dipendenze a ogni push e ogni lunedì.
 - `.github/dependabot.yml`: aggiornamenti di sicurezza automatici delle dipendenze.
@@ -104,9 +115,16 @@ Le dipendenze diventano vulnerabili col passare del tempo anche se il codice non
 
 ## Requisiti e note
 
-- Funziona su macOS e Linux. Gli script usano solo bash, git e grep; per leggere il JSON degli hook usano il primo disponibile tra `jq`, `python3` e `node` (su un sistema con Claude Code almeno uno c'è sempre).
-- Se sono installati strumenti dedicati (`gitleaks`, `pip-audit`, ecc.) il plugin li sfrutta, ma non sono richiesti.
-- **Onestà sul rischio**: Vibe Shield riduce drasticamente la probabilità di incidenti, non la azzera. Nessuno strumento può garantire sicurezza assoluta.
+- Runtime richiesto: macOS/Linux, Bash, Git, grep e **Python 3.8 o successivo** per parsing dei comandi, snapshot e gate. Gli scanner di vulnerabilità dei singoli stack devono essere disponibili per completare le rispettive aree di audit.
+- Uno scanner a pattern non trova ogni segreto. La revisione AI può mancare vulnerabilità o produrre falsi allarmi: servono prove, test e copertura esplicita.
+- Il dispatcher accetta comandi diretti supportati; comandi composti (anche `git add && git commit`), opzioni globali Git ambigue e destinazioni di deploy esplicite non supportate vengono bloccati con una spiegazione. Esegui add, commit e pubblicazione separatamente. La presenza di un comando fra quelli riconosciuti non implica supporto per tutte le sue opzioni.
+- Il gate automatico richiede un repository Git con storia completa; deploy senza Git, clone shallow e submodule richiedono una verifica separata e non ricevono un pass automatico di pubblicazione. La storia viene controllata conservativamente su tutti i riferimenti locali, non soltanto sui commit diretti al remoto: può bloccare anche segreti in branch che non stai inviando.
+- Lo snapshot include file tracciati, stage, riferimenti Git, regole del plugin e file locali ignorati, compresi gli output di build. Esclude i report interni e alcune directory di dipendenze/cache non tracciate. La scansione automatica dei segreti alla pubblicazione copre storia e file non ignorati; i contenuti della cartella distribuita e i servizi remoti richiedono i controlli di `/pre-deploy`.
+- Il gate richiede età inferiore a 30 minuti **e** identità invariata. Include lo stato del codice considerato dal gate; non attesta automaticamente servizi remoti, impostazioni nel cloud o database advisory mutati dopo la scansione.
+- I blocchi locali non sono una barriera contro un utente che controlla la macchina. CI, permessi e controlli del provider completano la protezione; verificare la copertura del template CI per gli stack effettivamente usati.
+- Le regressioni automatiche verificano casi dei guard, non misurano ancora tasso di vulnerabilità mancate, falsi positivi o qualità complessiva dell’audit. Non è dimostrato un livello di sicurezza “massimo”.
+
+Per le regressioni locali: `python3 -m unittest discover -s tests`. Per il collaudo nell’host e il confronto dei consumi vedi [TESTING.md](TESTING.md).
 
 ## Struttura del repo
 
@@ -115,6 +133,18 @@ Le dipendenze diventano vulnerabili col passare del tempo anche se il codice non
 skills/            le 9 skill (comandi)
 agents/            i 5 agenti specializzati (4 auditor + verificatore avversariale)
 hooks/hooks.json   hook automatici (PreToolUse su Bash, PostToolUse su Write/Edit)
-scripts/           script di guardia e scansione (bash puro, nessuna dipendenza)
+scripts/           script di guardia e scansione (Bash + Python 3)
 templates/         workflow CI GitHub Actions e dependabot, installati da /setup-security
 ```
+
+## Stato della beta e contributi
+
+La candidata 0.5.1-beta.1 supera 55 regressioni locali. Le copie installate della precedente 0.5.0 avevano superato sei smoke test. Questo non è un benchmark della capacità di trovare vulnerabilità. Il workflow di questo repository prepara regressioni su Linux/macOS e Python 3.9/3.12, con scansione della storia Git: il suo esito va verificato su GitHub prima del rilascio.
+
+Restano da completare il collaudo automatico degli hook nell’host reale, un’installazione da parte di un tester esterno e prove su applicazioni con vulnerabilità note. Non viene dichiarata una copertura certificata di uno stack applicativo. Windows e host diversi da Claude Code non sono collaudati end-to-end.
+
+Per contribuire vedi [CONTRIBUTING.md](CONTRIBUTING.md), per le novità [CHANGELOG.md](CHANGELOG.md). Segnala problemi ordinari nelle [issue](https://github.com/mdigital94/vibe-shield-plugin/issues); per vulnerabilità del plugin segui [SECURITY.md](SECURITY.md). Non caricare log integrali, credenziali o codice privato.
+
+### Candidata 0.5.1-beta.1
+
+La candidata include il controllo dei tag annotati inviati tramite identificatore esplicito, la scansione dei riferimenti Git a tree/blob (compresi checkpoint locali) e l’invalidazione del pass quando cambia codice applicativo dentro `.vibe-shield/`. Le misurazioni private delle esecuzioni reali distinguono input, scrittura/lettura cache e output: non costituiscono un confronto controllato del risparmio tra versioni.

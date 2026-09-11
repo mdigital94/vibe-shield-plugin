@@ -1,75 +1,81 @@
 ---
 name: security-audit
-description: Audit di sicurezza completo del progetto con agenti paralleli (segreti, codice, dipendenze, configurazioni) e verifica incrociata avversariale dei problemi trovati. Usalo quando l'utente chiede di controllare la sicurezza, chiede "è sicuro?", vuole un report, o prima di pubblicare. Produce un report in italiano semplice e il gate per il deploy.
+description: Audit del progetto con scanner deterministici, revisione del codice e specialisti quando necessari. Verifica indipendente dei problemi per gruppi correlati. Produce report, copertura esplicita e gate solo per audit completi.
 argument-hint: "[cartella o area da controllare, opzionale] [modello, opzionale]"
 ---
 
 # Security Audit
 
-Esegui un audit di sicurezza completo del progetto corrente (o dell'area indicata in $ARGUMENTS se specificata). Vale per qualsiasi tipo di progetto, dal vibe coding allo sviluppo professionale. Adatta le spiegazioni all'utente: per default italiano semplice, comprensibile anche a chi non programma.
+Controlla il progetto corrente, in italiano semplice salvo diversa richiesta. Un’area indicata in $ARGUMENTS produce un audit **parziale**: documenta i risultati, ma non autorizza l’intero progetto.
 
-## Scelta del modello
+## Modello e costo
 
-Gli agenti del plugin sono configurati per usare il modello migliore disponibile (campo `model` nei file degli agenti), indipendentemente dal modello della sessione. Regole:
-
-- Se l'utente ha chiesto un modello specifico (negli argomenti o nella conversazione), passa quel modello come override a TUTTI gli agenti che lanci.
-- Altrimenti non passare override: vale il modello definito in ogni agente.
-- Se il lancio di un agente fallisce perché il modello configurato non è disponibile per l'account, rilancia senza override (eredita la sessione) e segnala la cosa all'utente a fine audit.
+Gli agenti ereditano il modello della sessione. Rispetta un modello esplicitamente richiesto dall’utente; se non disponibile, dichiara il limite senza sostituirlo silenziosamente. Non forzare il modello più costoso. Usa specialisti per un compito circoscritto che richiede analisi indipendente o competenza specifica, senza avviare automaticamente tutti e quattro gli auditor.
 
 ## Procedura
 
-### 1. Ricognizione veloce
+### 1. Ambito e invalidazione
 
-Identifica lo stack leggendo i file chiave (package.json, requirements.txt, file di config di piattaforma, struttura cartelle). Poi leggi `${CLAUDE_SKILL_DIR}/references/stack-checklists.md` e seleziona le sezioni pertinenti allo stack trovato: le passerai agli agenti come contesto aggiuntivo.
+Lavora dalla radice del repository interessato, mai dalla cartella di un altro progetto. Identifica se è un audit completo o parziale. Prima di iniziare invalida l’approvazione precedente e acquisisci l’identità del contenuto con il protocollo gate descritto sotto. Un’interruzione deve lasciare il progetto bloccato.
 
-### 2. Lancia i 4 agenti in parallelo
+Leggi una volta i manifest e le configurazioni chiave, individua monorepo, stack, superfici d’attacco e componenti distribuiti. Leggi solo le sezioni pertinenti di `${CLAUDE_SKILL_DIR}/references/stack-checklists.md`. Mantieni una matrice di copertura: segreti e storia Git, dipendenze di ogni stack, codice e logica applicativa, configurazioni. Ogni voce ha esito completa/incompleta/non applicabile, prove e motivazione. Non applicabile richiede una motivazione verificata, non l’assenza di risultati.
 
-Lancia in un unico blocco, in parallelo, questi quattro agenti del plugin, passando a ciascuno: lo stack rilevato, la cartella radice del progetto e l'eventuale area richiesta:
+### 2. Scanner deterministici prima dell’AI
 
-- `secret-scanner`: segreti esposti nel codice e nella storia git
-- `code-auditor`: vulnerabilità nel codice (OWASP Top 10)
-- `dependency-auditor`: dipendenze vulnerabili o sospette
-- `config-auditor`: configurazioni pericolose (CORS, header, RLS Supabase, regole Firebase, Docker, CI)
+Esegui lo scanner del plugin sul progetto e sull’intera storia Git:
 
-Ogni agente restituisce finding nel formato standard con GRAVITA, DOVE, PROBLEMA, SPIEGAZIONE, RISCHIO, FIX, AUTO_FIX e una riga TOTALI.
-
-### 3. Consolida
-
-- Unisci i finding, elimina i duplicati (lo stesso problema segnalato da due agenti conta una volta, con la gravità più alta).
-- Ordina per gravità: CRITICO, ALTO, MEDIO, BASSO.
-
-### 4. Verifica incrociata avversariale
-
-Ogni finding CRITICO, ALTO o MEDIO passa al vaglio dell'agente `finding-verifier`, che cerca attivamente di smentirlo leggendo il codice reale:
-
-- Lancia un'istanza di `finding-verifier` per finding, in parallelo (a blocchi di massimo 8 alla volta se sono tanti). Passa a ogni istanza il finding completo e il contesto dello stack.
-- Applica i verdetti: CONFERMATO resta (con l'eventuale gravità corretta indicata dal verificatore); SMENTITO esce dal conteggio e finisce in appendice al report con la motivazione; INCERTO resta nel conteggio con la gravità originale, marcato come "da confermare".
-- I finding BASSO non passano la verifica (non bloccano nulla): restano come segnalati.
-
-### 5. Scrivi il report e il gate
-
-1. Scrivi il report completo in `.vibe-shield/report.md` con questa struttura: data, commit, riepilogo dei totali post-verifica, i finding raggruppati per gravità nel formato standard (con il verdetto della verifica), e in appendice i finding smentiti con motivazione.
-2. Calcola il risultato: `pass` solo se dopo la verifica ci sono ZERO finding critici, ZERO alti e ZERO medi. Altrimenti `fail`.
-3. Scrivi il gate eseguendo lo script del plugin:
-
-```
-bash "${CLAUDE_SKILL_DIR}/../../scripts/write-status.sh" <pass|fail> <critici> <alti> <medi> <bassi>
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/scan-secrets.sh" .
+bash "${CLAUDE_SKILL_DIR}/../../scripts/scan-secrets.sh" --history --all
 ```
 
-Il gate sblocca push e deploy per 30 minuti o finché il commit non cambia.
+Esiti dello scanner: `0` nessun match, `2` finding, `3` scansione incompleta/errore. Un limite alla storia o file saltati non costituiscono copertura completa; se la storia non esiste motivane la non applicabilità. Usa strumenti dedicati disponibili per integrare la scansione, con output redatto per non mostrare segreti. Controlla dipendenze con il gestore e il database appropriati (es. npm audit sul lockfile, pip-audit sui requisiti del progetto). Controlla tutti i manifest pertinenti, anche nei sotto-progetti.
 
-### 6. Riassumi all'utente
+Conserva output dettagliati localmente, con segreti oscurati. Al modello passa solo esito, ambito, comando/versione/data e finding con riferimenti. Non riversare log completi nella conversazione. Scanner mancante, errore, database non raggiungibile o output non interpretabile significa **copertura incompleta**, mai “nessuna vulnerabilità”. `pip list --outdated` non è uno scanner di vulnerabilità. Non eseguire installazioni o lifecycle script per semplice ricognizione.
 
-Presenta il risultato in linguaggio adatto all'utente (default: italiano semplice):
+### 3. Revisione semantica e delega mirata
 
-- Prima riga: esito secco. Esempio: "🔴 Trovati 2 problemi gravi e 1 medio: per ora NON pubblicare" oppure "🟢 Nessun problema rilevante: puoi pubblicare".
-- Poi i problemi critici, alti e medi, uno per uno, ciascuno con: cosa succede in pratica se non lo risolvi (una frase) e la correzione proposta. Indica quali sono stati confermati dalla verifica incrociata e quali restano incerti.
-- Dei bassi di' solo quanti sono e che stanno nel report.
-- Chiudi offrendo il passo successivo: se ci sono finding con AUTO_FIX SI, proponi di eseguire la skill `fix-security` per correggerli subito.
-- Solo se l'utente ha chiesto esplicitamente un secondo parere di altri modelli AI (GPT, Gemini, open source), esegui dopo l'audit la skill `second-opinion`. Mai proporla o eseguirla di tua iniziativa: è una funzione opzionale, spenta di default.
+Gli scanner non verificano da soli autorizzazioni, IDOR, logica di business o percorsi tra input e utilizzo. La revisione semantica dei componenti pertinenti è obbligatoria, svolta dal coordinatore o da `code-auditor`. Leggi le checklist degli auditor pertinenti se svolgi tu la loro analisi; non serve lanciarli solo per leggere una checklist.
 
-## Regole
+Delega a `secret-scanner`, `dependency-auditor` o `config-auditor` quando ci sono casi ambigui, più stack o superfici che meritano analisi distinta. Assegna ambiti non sovrapposti e passa inventario, risultati sintetici e riferimenti ai file. Evita di ripetere scansioni già valide dello stesso contenuto. La riduzione delle deleghe non riduce la matrice di copertura richiesta.
 
-- Non mostrare MAI il valore completo di un segreto, nemmeno nel report: mascheralo.
-- Non minimizzare: se c'è un critico, un alto o un medio, il messaggio è "non pubblicare finché non è risolto".
-- Non allarmare a vuoto: la verifica incrociata serve esattamente a questo; un audit pulito è un buon risultato.
+Richiedi finding con ID, GRAVITA, DOVE, PROBLEMA, SPIEGAZIONE, RISCHIO, FIX, AUTO_FIX; prove concrete, niente trascrizioni estese. Consolida duplicati e ordina per gravità.
+
+### 4. Verifica indipendente per gruppi
+
+Ogni finding CRITICO, ALTO o MEDIO richiede `finding-verifier`, indipendente da chi lo ha prodotto. Raggruppa da uno a quattro finding correlati per componente, condividendo il contesto; non lanciare un agente per ogni singolo problema per default. Il verificatore legge le prove reali e restituisce un verdetto distinto per ID.
+
+CONFERMATO resta con gravità verificata; SMENTITO esce dal conteggio con motivazione in appendice; INCERTO resta con gravità originale, “da confermare”. Se la verifica non è disponibile o il budget termina, marca l’audit incompleto. I BASSI non richiedono verifica indipendente.
+
+### 5. Report e gate
+
+Scrivi `.vibe-shield/report.md`: data, radice e identità iniziale/finale del contenuto, ambito completo/parziale, matrice di copertura, scanner e relativi esiti, totali dopo verifica, finding con verdetti, smentiti in appendice, limiti e controlli mancanti. Registra agenti effettivamente avviati e riusi. Durata e token sono valori misurati solo se disponibili dall’host; altrimenti scrivi “non disponibile”. Non presentare stime come consumi reali.
+
+`pass` richiede contemporaneamente ambito completo, copertura completa delle aree pertinenti, verifiche completate, zero critici/alti/medi e contenuto invariato dall’inizio. Problemi bloccanti danno `fail`; audit parziale, interrotto, senza strumenti necessari o con contenuti mutati dà `incomplete`. Un audit selettivo delle sole modifiche può aiutare a indagare, ma non conferisce un pass globale. Non riciclare vecchie conclusioni su contenuti cambiati.
+
+Dalla radice del repository, esegui all’inizio:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/write-status.sh" begin
+```
+
+Il comando invalida il pass e salva lo snapshot iniziale. Al termine, solo per audit completo e concluso con contenuti invariati:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/write-status.sh" pass 0 0 0 <bassi> --scope full --complete
+```
+
+Per problemi bloccanti o copertura insufficiente:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../../scripts/write-status.sh" fail <critici> <alti> <medi> <bassi>
+bash "${CLAUDE_SKILL_DIR}/../../scripts/write-status.sh" incomplete <critici> <alti> <medi> <bassi>
+```
+
+Scegli uno solo degli ultimi due esiti secondo il caso. Controlla il codice d’uscita di ogni comando: uno snapshot cambiato o un errore di scrittura non è un pass. Lo script controlla l’identità, ma la dichiarazione di copertura completa resta responsabilità dell’auditor; non scrivere `--complete` quando mancano controlli. Il pass dura meno di 30 minuti **e** richiede identità invariata; il solo HEAD uguale non basta.
+
+### 6. Esito all’utente
+
+Comunica esito e limiti prima dei dettagli: “Controllo completato, nessun problema bloccante rilevato”, “Non pubblicare: …” oppure “Controllo incompleto: manca …”. Un pass non è una garanzia di sicurezza assoluta. Spiega i problemi critici/alti/medi e il fix proposto, conta i bassi rimandando al report. Se servono correzioni, indica `fix-security` come passo successivo.
+
+Esegui `second-opinion` solo se esplicitamente richiesto. Non mostrare mai segreti completi in output o report. Se scade il budget, conserva risultati e lacune, lascia il gate incompleto: non ridurre silenziosamente la copertura per concludere.

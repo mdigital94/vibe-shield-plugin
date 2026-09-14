@@ -1,17 +1,17 @@
-# Contribuire a Vibe Shield
+# Contributing to Vibe Shield
 
-La beta cerca riproduzioni minime, correzioni dei guard, miglioramenti alla chiarezza e prove sui consumi. Prima di proporre una funzionalità ampia, descrivi nelle issue il problema concreto e il risultato atteso.
+This experimental beta welcomes minimal reproductions, fixes to the guards, clearer documentation, and evidence about token usage. Before proposing a large feature, open an issue describing the concrete problem and expected outcome.
 
-Per le vulnerabilità segui [SECURITY.md](SECURITY.md). Nelle issue ordinarie indica versione del plugin/host, sistema operativo, passi, risultato atteso e osservato. Usa repository temporanei e credenziali sintetiche; rimuovi percorsi personali, log privati e dati di clienti.
+For vulnerabilities, follow [SECURITY.md](SECURITY.md). For ordinary issues, include the plugin and host versions, operating system, reproduction steps, and expected and observed results. Use temporary repositories and synthetic credentials; remove personal paths, private logs, and customer data.
 
-## Modifiche e verifiche
+## Changes and verification
 
-1. Mantieni ogni modifica limitata al problema affrontato e aggiorna la documentazione correlata.
-2. Per un difetto funzionale aggiungi un test che riproduca il comportamento errato e verifichi la correzione. I test non devono pubblicare né accedere a credenziali reali.
-3. Esegui `python3 -m unittest discover -s tests` dalla radice del repository (Bash, Git e Python 3.8+ richiesti).
-4. Se tocchi gli hook o l’installazione, segui anche [TESTING.md](TESTING.md) e distingui test diretti degli script da esecuzione automatica nell’host.
-5. Nella pull request descrivi problema, cambiamento, verifiche eseguite e limiti ancora aperti. Non dichiarare test non eseguiti.
+1. Keep each change focused on the problem it addresses and update the related documentation.
+2. For a functional defect, add a test that reproduces the incorrect behavior and verifies the fix. Tests must not publish anything or access real credentials.
+3. Run `python3 -m unittest discover -s tests` from the repository root. Bash, Git, and Python 3.9+ are required for the full suite.
+4. If you change hooks or installation, also follow [TESTING.md](TESTING.md). Distinguish direct script tests from automatic execution in the host.
+5. In your pull request, describe the problem, the change, the checks you ran, and remaining limitations. Do not claim checks you did not run.
 
-Il runtime Python usa la libreria standard. Il workflow del plugin verifica regressioni e segreti; il template in `templates/` è invece destinato ai progetti degli utenti e va adattato alle loro dipendenze. I risultati AI dipendono dal modello e non sono coperti dalla sola suite dei guard.
+The Python runtime uses the standard library. The plugin workflow checks regressions and secrets; the template in `templates/` is intended for users' projects and must be adapted to their dependencies. AI results depend on the model and are not validated by the guard test suite alone.
 
-I contributi sono distribuiti con la [licenza MIT](LICENSE) del repository.
+Contributions are distributed under the repository's [MIT license](LICENSE).

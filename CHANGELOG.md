@@ -1,48 +1,52 @@
 # Changelog
 
-## 0.6.0-beta.1 — prerelease
+## Unreleased — documentation
 
-- CLI Python installabile (versione pacchetto 0.6.0b1): scanner locali e revisione consultiva con provider e modello espliciti, anteprima predefinita.
-- Accesso API multiprovider o login Claude CLI; altri CLI non ancora supportati.
-- Raccolta completa delle risposte Claude, inclusi blocchi continuati, ritiri e duplicati; errori e timeout conservano il testo parziale senza autorizzare il gate.
-- Mascheramento dei valori sensibili che preserva espressioni Python analizzabili; fallback conservativo nei formati ambigui.
-- Risposta concisa strutturata predefinita, modalità dettagliata opzionale e confronto esplorativo documentato.
-- Banco di prova sintetico e documentazione dei limiti; nessuna promessa di sicurezza completa o copertura universale.
+- English README, public guides, issue templates, and marketplace descriptions.
+- Default branch aligned with the current experimental beta; existing release tags remain unchanged.
+
+## 0.6.0-beta.1 — experimental prerelease
+
+- Installable Python CLI (package version 0.6.0b1): local scanners and advisory reviews with an explicit provider and model, with preview enabled by default.
+- Multiple API providers or Claude CLI login; other CLIs are not yet supported.
+- Claude response collection handles continuation blocks, retractions, and duplicates; errors and timeouts preserve partial text without approving the gate.
+- Sensitive-value masking preserves parseable Python expressions, with a conservative fallback for ambiguous formats.
+- Structured concise responses by default, an optional detailed mode, and a documented exploratory comparison.
+- Synthetic benchmark suite and documented limitations; no promise of complete security or universal coverage.
 
 ## 0.5.1-beta.2 — prerelease
 
-- Supporto ristretto alle prerelease GitHub da tag locale/remoto verificato sul contenuto approvato, senza allegati.
-- Documentata la prova degli hook reali in una sessione Claude separata sulla candidata beta.1.
-- Distinte le istruzioni per scaricare la beta da quelle del ramo principale.
-- CI della beta.1 superata; collaudo umano esterno e confronto controllato dei consumi ancora da raccogliere.
+- Restricted support for GitHub prereleases from a verified local/remote tag pointing to approved content, without assets.
+- Documented a real hook test in a separate Claude session on the beta.1 candidate.
+- Distinguished beta download instructions from instructions for the default branch.
+- Beta.1 CI passed; external human testing and a controlled token-usage comparison were still pending at this release.
 
-## 0.5.1-beta.1 — candidata
+## 0.5.1-beta.1 — candidate
 
-- Corretta scansione dei metadati dei tag annotati inviati con identificatore esplicito.
-- Supportati riferimenti locali tree/blob, inclusi checkpoint Codex; i contenuti vengono scansionati, i submodule restano incompleti.
-- Approvazione invalidata anche da cambiamenti a codice applicativo in `.vibe-shield/`.
-- Preparati licenza MIT, policy di segnalazione, issue template e CI multipiattaforma.
-- Rimossa email non necessaria dai metadati correnti del marketplace, senza riscrivere la storia pubblica.
+- Fixed scanning of annotated tag metadata when pushing an explicit identifier.
+- Added support for local tree/blob references, including Codex checkpoints; their contents are scanned, while submodules remain incomplete.
+- Changes to application code within `.vibe-shield/` also invalidate approval.
+- Prepared the MIT license, disclosure policy, issue templates, and cross-platform CI.
+- Removed an unnecessary email address from current marketplace metadata without rewriting public history.
 
+## 0.5.0 — beta, release preparation
 
-## 0.5.0 — beta, preparazione al rilascio
+### Reliability
 
-### Affidabilità
+- Approval is bound to the repository and its contents and remains valid for less than 30 minutes; approvals from 0.4.x cannot be reused.
+- Partial, failed, or incomplete audits keep publication blocked; pre-deploy preserves the original expiration time when reusing an audit.
+- Checks cover content intended for a commit and objects in Git history, with conservative handling of compound commands, different repositories, and unsupported configurations.
+- A suite of 46 regression tests covers verified guard and CI template behavior.
 
-- Approvazione legata al repository e ai contenuti, con validità inferiore a 30 minuti; le approvazioni 0.4.x non sono riutilizzabili.
-- Audit parziali, falliti o incompleti lasciano bloccata la pubblicazione; pre-deploy conserva la scadenza originale quando riusa un audit.
-- Controlli sul contenuto destinato al commit e sugli oggetti della storia Git; gestione conservativa di comandi composti, repository differenti e configurazioni non supportate.
-- Suite di 46 regressioni per i comportamenti verificati dei guard e del template CI.
+### Auditing and usage
 
-### Audit e consumi
+- Scanners run before AI analysis, specialists are engaged as needed, and related findings are independently verified in small groups.
+- The model is inherited from the session rather than forcing the most expensive model.
+- Token savings had not yet been demonstrated in a controlled comparison; no percentage was promised.
 
-- Scanner prima dell’analisi AI, specialisti attivati secondo necessità e verifica indipendente per piccoli gruppi di problemi correlati.
-- Modello ereditato dalla sessione, senza imposizione del modello più costoso.
-- Risparmio di token non ancora dimostrato con un confronto controllato; nessuna percentuale promessa.
+### Distribution preparation
 
-### Preparazione della distribuzione
+- MIT license, beta instructions and limitations, security policy, contribution guide, and issue templates.
+- Linux/macOS regression workflow and secret scanning, with actions pinned to commits and read-only permissions.
 
-- Licenza MIT, istruzioni e limiti della beta, policy di sicurezza, guida ai contributi e modelli di issue.
-- Workflow di regressione Linux/macOS e scansione segreti, con azioni fissate a commit e permessi di sola lettura.
-
-Il canale di segnalazione privata è stato abilitato e verificato il 2026-09-11. L’esecuzione del workflow su GitHub e l’installazione da parte di un tester esterno devono ancora essere verificate prima di promuovere la candidata. Questa voce documenta le modifiche preparate e non attesta una pubblicazione avvenuta.
+The private reporting channel was enabled and verified on 2026-09-11. At this preparation stage, the GitHub workflow run and installation by an external tester still needed verification before candidate promotion. This historical entry records prepared changes and does not establish that a release had been published at that point.

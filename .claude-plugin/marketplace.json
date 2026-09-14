@@ -3,12 +3,12 @@
   "owner": {
     "name": "Matteo Di Lorenzo"
   },
-  "description": "Marketplace del plugin Vibe Shield: sicurezza automatica per progetti vibe coding.",
+  "description": "Vibe Shield plugin marketplace: security checks for AI-assisted development.",
   "plugins": [
     {
       "name": "vibe-shield",
       "source": "./",
-      "description": "Scanner e audit AI mirati, verifica indipendente dei problemi e blocchi locali per commit/pubblicazione con copertura esplicita.",
+      "description": "Local scanning, focused AI audits, independent finding verification, and commit and publication checks with explicit coverage.",
       "category": "security",
       "keywords": [
         "security",

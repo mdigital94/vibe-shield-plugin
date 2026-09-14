@@ -1,23 +1,23 @@
 ---
-name: Problema o falso allarme
-about: Segnala un problema riproducibile senza informazioni riservate
+name: Bug or false positive
+about: Report a reproducible problem without confidential information
 ---
 
-Per vulnerabilità del plugin segui SECURITY.md; non descrivere qui bypass sfruttabili.
-Non allegare segreti, log integrali, codice privato o dati di clienti.
+For plugin vulnerabilities, follow SECURITY.md; do not describe exploitable bypasses here.
+Do not attach secrets, complete logs, private code, or customer data.
 
-**Ambiente**
-- Versione Vibe Shield:
-- Host e versione:
-- Sistema operativo e versione Python:
+**Environment**
+- Vibe Shield version:
+- Host and version:
+- Operating system and Python version:
 
-**Passi per riprodurre**
-Usa un esempio minimo con dati sintetici.
+**Steps to reproduce**
+Use a minimal example with synthetic data.
 
-**Risultato atteso**
+**Expected result**
 
-**Risultato osservato**
-Includi solo l’output necessario e anonimizzato.
+**Observed result**
+Include only the necessary, anonymized output.
 
-**Riproducibilità**
-Succede anche su un repository temporaneo? Gli hook si attivano nell’host?
+**Reproducibility**
+Does this also happen in a temporary repository? Do the hooks run in your host?

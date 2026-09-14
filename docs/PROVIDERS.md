@@ -1,92 +1,95 @@
-# CLI indipendente: provider e modello
+# Standalone CLI: providers and models
 
-Stato: beta **0.6.0b1**, sorgente al tag GitHub `v0.6.0-beta.1`. Non pubblicata su PyPI. La CLI offre revisioni consultive; il plugin Claude Code mantiene i propri audit e hook.
+Status: beta **0.6.0b1**, available from GitHub tag `v0.6.0-beta.1`. Not published on PyPI. The CLI provides advisory reviews; the Claude Code plugin retains its own audits and hooks.
 
-## Installazione dal checkout di sviluppo
+## Install from a source checkout
 
-Richiede Python 3.9+, Git, Bash e grep su macOS/Linux. Consigliato un ambiente virtuale:
+Requires Python 3.9+, Git, Bash, and grep on macOS/Linux. Check out `v0.6.0-beta.1` to use the published beta; the default branch can receive subsequent documentation or development updates. A virtual environment is recommended:
 
 ```bash
+git clone --branch v0.6.0-beta.1 https://github.com/mdigital94/vibe-shield-plugin.git
+cd vibe-shield-plugin
 python3 -m venv .venv
-.venv/bin/python -m pip install .
-.venv/bin/vibe-shield providers
+source .venv/bin/activate
+python3 -m pip install .
+vibe-shield providers
 ```
 
-Puoi usare anche `python3 -m vibe_shield` dalla radice del checkout. Il pacchetto include gli stessi script/pattern del plugin: non è necessario installare Claude per usare scanner e API.
+You can also run `python3 -m vibe_shield` from the checkout root. The package includes the plugin's scripts and patterns: Claude is not required to use the scanner or API adapters.
 
-## Controlli senza AI
+## Checks without AI
 
 ```bash
-vibe-shield scan /percorso/progetto
-vibe-shield scan /percorso/progetto --history
-vibe-shield check /percorso/progetto
+vibe-shield scan /path/to/project
+vibe-shield scan /path/to/project --history
+vibe-shield check /path/to/project
 ```
 
-`scan`: exit 0 nessun match, 2 finding, 3 incompleto. `check`: exit 0 solo per un gate completo valido, altrimenti 2. Una scansione pulita non certifica l’applicazione e non crea un pass.
+`scan` exits with 0 for no matches, 2 for findings, or 3 for an incomplete scan. `check` exits with 0 only for a valid, complete gate pass; otherwise it returns 2. A clean scan does not certify an application or create a pass.
 
-## Scegli accesso, provider e modello
+## Choose access method, provider, and model
 
-| Modalità | Provider | Accesso | Stato |
+| Mode | Provider | Access | Status |
 | --- | --- | --- | --- |
-| API | `openai` | `OPENAI_API_KEY` | Adattatore Chat Completions |
-| API | `anthropic` | `ANTHROPIC_API_KEY` | Adattatore Messages |
-| API | `gemini` | `GEMINI_API_KEY` | Adattatore generateContent |
-| API | `ollama` | Runtime API configurato | Adattatore chat, default loopback |
-| API | `openai-compatible` | `VIBE_SHIELD_API_KEY` e `--endpoint` | Protocollo Chat Completions |
-| CLI | `claude` | Accesso già configurato nel CLI | Richiede versione con `--safe-mode` e opzioni di isolamento |
-| CLI | Codex, Gemini, Ollama | — | Adattatori non disponibili: isolamento completo non verificato |
+| API | `openai` | `OPENAI_API_KEY` | Chat Completions adapter |
+| API | `anthropic` | `ANTHROPIC_API_KEY` | Messages adapter |
+| API | `gemini` | `GEMINI_API_KEY` | generateContent adapter |
+| API | `ollama` | Configured API runtime | Chat adapter; defaults to loopback |
+| API | `openai-compatible` | `VIBE_SHIELD_API_KEY` and `--endpoint` | Chat Completions protocol |
+| CLI | `claude` | Access already configured in the CLI | Requires a version supporting `--safe-mode` and isolation options |
+| CLI | Codex, Gemini, Ollama | — | Adapters unavailable: full isolation has not been verified |
 
-API e CLI sono scelte separate. Un abbonamento chat non fornisce automaticamente crediti API. Il CLI Claude usa l’accesso configurato, che può essere un abbonamento o una chiave API. Nessuna credenziale viene copiata dal tool. Configura le chiavi nell’ambiente tramite il tuo gestore di segreti, senza inserirle in file del progetto o negli argomenti del comando.
+API and CLI access are separate choices. A chat subscription does not automatically include API credits. The Claude CLI uses its configured access, which may be a subscription or an API key. Vibe Shield does not copy credentials. Set keys in the environment through your secrets manager; do not put them in project files or command arguments.
 
-`--model` è obbligatorio e viene trasmesso al provider senza fallback o sostituzioni. Inserisci un identificatore di modello testuale compatibile con l’API scelta e disponibile al tuo account; il tool non mantiene un catalogo universale di modelli. Compatibilità con un protocollo non significa collaudo di ogni servizio/modello. `--endpoint` è ammesso solo per Ollama e OpenAI-compatible: URL base HTTPS, oppure HTTP su loopback; niente credenziali nell’URL, redirect o proxy ereditati dalle API.
+`--model` is required and is passed to the provider without fallback or substitution. Supply a text model identifier compatible with the selected API and available to your account; the tool does not maintain a universal model catalog. Protocol compatibility does not mean every service and model has been tested. `--endpoint` is supported only for Ollama and OpenAI-compatible services: use an HTTPS base URL, or HTTP on loopback. API requests reject credentials in URLs and redirects, and do not inherit proxy settings.
 
-Gli adattatori CLI mancanti non sono dichiarati impossibili: serve verificare che non leggano altri file o eseguano strumenti. La sola modalità read-only non limita necessariamente le letture ai file selezionati. Per quei provider usa l’API disponibile.
+The missing CLI adapters are not considered impossible: their file access and tool execution need to be verified first. Read-only mode alone does not necessarily restrict reads to the selected files. Use the available API adapter for those providers.
 
-## Anteprima e invio esplicito
-
-```bash
-vibe-shield review /percorso/progetto --mode api --provider openai \
-  --model IL_TUO_MODELLO --file src/app.py --file src/auth.py
-```
-
-Senza `--execute` mostra solo il manifest dei file: nessuna rete, nessuna invocazione del CLI, nessuna modifica al gate. Seleziona file relativi al progetto, non cartelle. Per effettuare la richiesta aggiungi `--execute` allo stesso comando: autorizza l’invio e gli eventuali costi dell’accesso scelto.
-
-Esempio con CLI già configurato:
+## Preview before explicitly sending
 
 ```bash
-vibe-shield review /percorso/progetto --mode cli --provider claude \
-  --model IL_TUO_MODELLO --file src/app.py --execute
+vibe-shield review /path/to/project --mode api --provider openai \
+  --model YOUR_MODEL --file src/app.py --file src/auth.py
 ```
 
-Esempio con runtime Ollama locale, modello già disponibile:
+Without `--execute`, this only displays the file manifest: no network access, no CLI invocation, and no gate changes. Select project-relative files, not directories. Add `--execute` to the same command to make the request: this authorizes sending the content and any costs associated with the selected access method.
+
+Using an already configured CLI:
 
 ```bash
-vibe-shield review /percorso/progetto --mode api --provider ollama \
-  --model IL_TUO_MODELLO --file src/app.py --execute
+vibe-shield review /path/to/project --mode cli --provider claude \
+  --model YOUR_MODEL --file src/app.py --execute
 ```
 
-Endpoint compatibile: `--provider openai-compatible --endpoint https://servizio.example/v1`. Il tool aggiunge `/chat/completions`; Ollama aggiunge `/api/chat`. Se scegli un endpoint Ollama remoto, il codice esce dal computer.
+Using a local Ollama runtime with an available model:
 
-## Dati, limiti ed esiti
+```bash
+vibe-shield review /path/to/project --mode api --provider ollama \
+  --model YOUR_MODEL --file src/app.py --execute
+```
 
-- Solo i file espliciti entrano nel prompt, massimo32 file/64KiB complessivi di default. `--max-input-bytes` arriva fino a256KiB. Niente troncamento silenzioso.
-- File sensibili per nome, directory di credenziali, binari e symlink sono rifiutati. Mascherati formati noti, assegnazioni di credenziali e chiavi API dell’ambiente; non è una garanzia che ogni dato privato sia riconosciuto. Esamina cosa stai autorizzando a inviare.
-- Le API non ricevono strumenti; Claude CLI gira in una cartella temporanea con tool, skill, MCP e personalizzazioni disabilitati. Il login resta gestito dal CLI. Non vengono effettuate modifiche suggerite dal modello.
-- `--timeout` limita l’inattività socket per le API e la durata totale per il CLI; default60 secondi. `--max-output-tokens` chiede un limite di output al provider (default2000). Nel CLI è un limite per risposta, non un tetto totale: le continuazioni interne di Claude possono superarlo. L'adattatore non aggiunge retry o fallback; restano i comportamenti interni del CLI.
-- `review` è **consultivo sui file selezionati**, non un audit completo dello stack. Quando parte invalida il precedente pass e non scrive mai PASS, anche se il modello risponde “nessun problema”. Se i file selezionati cambiano durante la richiesta, risultato incompleto.
-- Report JSON: provider, modello richiesto/restituito quando noto, hash dei file, durata misurata, contatori disponibili e testo mascherato. Risposta del modello trattata come dato non fidato. Exit0 indica revisione completata, **non autorizzazione alla pubblicazione**; errori/limiti producono exit3.
-- Claude CLI viene letto in `stream-json`: i blocchi testuali completi sono ricomposti nell'ordine ricevuto, usando gli identificatori dei blocchi per duplicati, ritiri e sostituzioni. Il campo finale `result` non viene aggiunto nuovamente. Thinking, messaggi sintetici e output di agenti figli sono esclusi. `response_segments` conta i blocchi conservati; `response_complete` indica la verifica della conclusione, non la completezza dell'audit.
-- In caso di timeout, errore o flusso malformato, i blocchi già verificati restano nel report, mascherati, con stato `incomplete` e uscita3. Un blocco ancora in generazione o una riga JSON troncata non viene ricostruito per supposizione. Senza risultato finale i contatori sono sconosciuti. Lo stream grezzo non viene salvato.
-- Token mancanti sono null, non zero. OpenAI/Gemini includono i token in cache nell’input; Anthropic li separa. Non sommare indiscriminatamente input e cache. Non vengono stimati euro, quote abbonamento o risparmio tra modelli.
+For a compatible endpoint, use `--provider openai-compatible --endpoint https://service.example/v1`. The tool appends `/chat/completions`; Ollama appends `/api/chat`. Selecting a remote Ollama endpoint sends code off your computer.
 
-## Verifiche e lavoro restante
+## Data, limits, and outcomes
 
-Test automatici su trasporto/processi simulati, selezione file, errori e regressioni; pacchetto verificato fuori dal checkout. Primo collaudo live autorizzato con Claude CLI, abbonamento esistente e alias `fable`, restituito come `claude-fable-5-1`. Su macOS l'adattatore conserva anche `USER`, necessario al CLI per recuperare il login dal Portachiavi. Sono ancora da collaudare gli altri provider/modelli e da completare gli adattatori isolati per gli altri CLI.
+- Only explicitly selected files enter the prompt: up to 32 files and 64 KiB combined by default. `--max-input-bytes` supports up to 256 KiB. Content is not silently truncated.
+- Sensitive filenames, credential directories, binary files, and symlinks are rejected. Known secret formats, credential assignments, and API keys from the environment are masked; this does not guarantee detection of every private value. Review what you authorize for transmission.
+- API requests include no tools. The Claude CLI runs in a temporary directory with tools, skills, MCP, and customizations disabled. The CLI continues to manage login. Model-suggested changes are not applied.
+- `--timeout` limits socket inactivity for APIs and total process time for the CLI; the default is 60 seconds. `--max-output-tokens` requests a provider output limit (default: 2000). For the CLI, this is a per-response limit, not a total cap: Claude's internal continuations can exceed it. The adapter adds no retries or fallbacks; the CLI's internal behavior still applies.
+- `review` is **advisory and limited to selected files**, not a full-stack audit. Execution invalidates the previous pass and never writes PASS, even when the model reports no issues. If selected files change during the request, the result is incomplete.
+- JSON reports include the provider, requested and returned model when known, file hashes, measured duration, available usage counters, and masked text. Model output is treated as untrusted data. Exit 0 means the review completed, **not permission to publish**; errors and limits produce exit 3.
+- Claude CLI output is read as `stream-json`: completed text blocks are assembled in received order, using block identifiers to handle duplicates, retractions, and replacements. The final `result` field is not appended again. Thinking, synthetic messages, and child-agent output are excluded. `response_segments` counts retained blocks; `response_complete` indicates verified response termination, not audit completeness.
+- After a timeout, error, or malformed stream, already verified blocks remain in the report, masked, with status `incomplete` and exit 3. A block still being generated or a truncated JSON line is not reconstructed by guesswork. Without a final result, usage counters are unknown. The raw stream is not saved.
+- Missing token counts are null, not zero. OpenAI/Gemini include cached tokens in input counts; Anthropic reports them separately. Do not indiscriminately add input and cache counts. The tool does not estimate monetary costs, subscription quota usage, or savings between models.
 
-Il comando audit completo e le integrazioni bloccanti degli altri host richiedono ulteriore orchestrazione della copertura: una singola revisione AI non sostituisce scanner delle dipendenze, verifica indipendente e controlli di pubblicazione.
+## Verification and remaining work
 
-## Risposte e consumo
+Automated tests cover simulated transports and processes, file selection, errors, and regressions; the package has been checked outside the source checkout. The first authorized live test used Claude CLI with an existing subscription and the `fable` alias, returned as `claude-fable-5-1`. On macOS, the adapter also preserves `USER`, which the CLI needs to retrieve its login from Keychain. Other providers and models still require live testing, and isolated adapters for other CLIs remain to be built.
 
-`--detail concise` è il default: risultati con prova, posizione e rimedio, più limiti essenziali. `--detail detailed` conserva il formato esteso. La brevità è una richiesta al modello, non un limite rigido: nessun finding viene tagliato per lunghezza. Nella modalità concisa al modello arrivano percorso e testo; gli hash restano nel report locale. Vedi [confronto esplorativo](BENCHMARK.md).
+A full audit command and blocking integrations for other hosts require additional coverage orchestration: a single AI review does not replace dependency scanning, independent verification, or publication checks.
 
-Il mascheramento del sorgente e quello dei report sono distinti. Nel report, codice inline e blocchi di codice vengono trattati separatamente dalla prosa: valori sensibili rimangono oscurati senza cancellare automaticamente il resto del finding. `review_redacted` segnala modifiche al testo; un report privo di testo disponibile viene marcato incompleto. Questa verifica di disponibilità non valuta la correttezza della risposta. Il mascheramento resta euristico e non garantisce rilevamento di ogni segreto.
+## Response detail and usage
+
+`--detail concise` is the default: findings with evidence, location, and remediation, plus essential limitations. `--detail detailed` retains the extended format. Brevity is a request to the model, not a hard limit: findings are not cut off to meet a length target. In concise mode, the model receives paths and text; hashes remain in the local report. See the [exploratory comparison](BENCHMARK.md).
+
+Source and report masking are separate. In reports, inline code and fenced code blocks are processed separately from prose: sensitive values remain masked without automatically removing the rest of a finding. `review_redacted` indicates text changes; a report with no available review text is marked incomplete. This availability check does not assess the answer's correctness. Masking remains heuristic and does not guarantee detection of every secret.

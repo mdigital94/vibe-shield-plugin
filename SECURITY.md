@@ -1,17 +1,17 @@
-# Segnalazioni di sicurezza
+# Security reporting
 
-## Ambito e versioni
+## Scope and supported versions
 
-Vibe Shield è una beta di assistenza ai controlli di sicurezza dello sviluppo. Le correzioni sono destinate alla versione beta più recente; non è previsto il mantenimento delle versioni precedenti. La 0.5.0 invalida le approvazioni 0.4.x e richiede un nuovo audit.
+Vibe Shield is an experimental beta that assists with development security checks. Fixes target the latest beta; older versions are not maintained. Version 0.5.0 invalidates approvals from 0.4.x and requires a new audit.
 
-Sono rilevanti vulnerabilità degli script, esposizione di dati e modi riproducibili per ottenere un’approvazione non valida nei flussi dichiarati. Il plugin non è un confine di sicurezza contro chi può modificarne i file o disattivare gli hook. Per i limiti di copertura leggi il README.
+Relevant reports include vulnerabilities in the scripts, data exposure, and reproducible ways to obtain an invalid approval within the documented workflows. The plugin is not a security boundary against someone who can modify its files or disable its hooks. See the README for coverage limitations.
 
-## Comunicazione riservata
+## Private disclosure
 
-Usa [Report a vulnerability](https://github.com/mdigital94/vibe-shield-plugin/security/advisories/new) per inviare una segnalazione privata ai manutentori. Il canale GitHub è stato abilitato e verificato il 2026-09-11. Non aprire issue pubbliche con dettagli sfruttabili, segreti, log integrali o dati di clienti.
+Use [Report a vulnerability](https://github.com/mdigital94/vibe-shield-plugin/security/advisories/new) to send a private report to the maintainers. This GitHub channel was enabled and verified on 2026-09-11. Do not open public issues containing exploitable details, secrets, complete logs, or customer data.
 
-Se il canale diventa indisponibile, apri soltanto una richiesta generica nelle issue per concordare un contatto riservato; non includere dettagli della vulnerabilità.
+If the channel becomes unavailable, open only a generic issue asking for a private contact method; do not include vulnerability details.
 
-Nella segnalazione riservata includi versione del plugin e dell’host, sistema operativo, comportamento atteso/osservato e riproduzione minima con dati sintetici. Indica impatto e condizioni necessarie. Testa solo sistemi tuoi o per cui hai autorizzazione.
+In your private report, include the plugin and host versions, operating system, expected and observed behavior, and a minimal reproduction using synthetic data. Describe the impact and required conditions. Test only systems you own or are authorized to assess.
 
-Se hai esposto una credenziale reale, revocala presso il provider prima di inviare la segnalazione. Non inviare il suo valore. Non sono promessi tempi di risposta o compensi; una divulgazione pubblica dei dettagli va concordata dopo la valutazione e la correzione.
+If you have exposed a real credential, revoke it with its provider before reporting it. Do not send its value. No response times or rewards are promised; coordinate public disclosure of the details after assessment and remediation.

@@ -1,43 +1,42 @@
-# Prove della beta 0.6
+# Beta 0.6 evaluation
 
-Questi risultati riguardano piccoli progetti sintetici e non certificano la sicurezza delle applicazioni. Il banco contiene 30 casi: 12 coppie vulnerabile/corretto, 2 casi scanner e 4 tentativi di manipolare il revisore. Le risposte attese restano fuori dai file inviati al modello.
+These results concern small synthetic projects and do not certify application security. The suite contains 30 cases: 12 vulnerable/fixed pairs, 2 scanner cases, and 4 attempts to manipulate the reviewer. Expected answers stay outside the files sent to the model.
 
-## Cosa è stato osservato
+## Observations
 
-Il primo tentativo con Claude CLI e `fable` (restituito come `claude-fable-5-1`) ha prodotto 27 report su 28 revisioni; un caso è stato rifiutato due volte. I report riusciti dichiarano 286.035 token, includendo input, output, lettura e scrittura della cache. I consumi dei tentativi falliti non sono disponibili: il totale effettivo è quindi incompleto. I token non misurano euro né percentuale della quota dell'abbonamento.
+The first run with Claude CLI and `fable` (returned as `claude-fable-5-1`) produced 27 reports from 28 reviews; one case was refused twice. Successful reports declared 286,035 tokens, including input, output, cache reads, and cache writes. Usage from failed attempts is unavailable, so actual total usage is incomplete. Tokens do not measure monetary cost or the percentage of a subscription quota.
 
-Una lettura assistita dall'AI, non una revisione umana indipendente, ha individuato 14 report originali che iniziavano a metà frase. Altri due casi avevano parte dell'evidenza nascosta dal mascheramento. Non pubblichiamo precision o recall del vecchio tentativo: attribuire quelle omissioni al modello sarebbe fuorviante.
+An AI-assisted assessment, not an independent human review, identified 14 original reports that began mid-sentence. In two other cases, masking hid part of the evidence. We do not publish precision or recall for that run: attributing those omissions to the model would be misleading.
 
-La raccolta dello stream è stata corretta. Tre casi sono stati ripetuti senza aumentare il limite di output: tutti hanno prodotto report completi; uno conteneva due blocchi ricomposti. Il nuovo mascheramento mantiene le espressioni Python rilevanti, nascondendo i valori letterali sensibili. Non preserva allo stesso modo tutti i linguaggi; nei formati ambigui rimane conservativo.
+Stream collection was fixed. Three cases were rerun without increasing the output limit: all produced complete reports, including one assembled from two blocks. The revised masking preserves relevant Python expressions while hiding sensitive literal values. It does not preserve every language in the same way; ambiguous formats are handled conservatively.
 
-## Confronto esplorativo della risposta concisa
+## Exploratory comparison of concise responses
 
-Campione stabilito prima dell'esecuzione: c01/c02 (SQL), c13/c14 (HTML), c21 (password nel log), c29 (log e istruzione di lettura non autorizzata). Ogni caso viene eseguito una volta per condizione, dettagliata e concisa, alternandone l'ordine. Stesso sorgente, mascheramento, modello, accesso Claude, limite di output 2000 per risposta e timeout 180 secondi. Massimo 12 chiamate; nessun retry automatico.
+The sample was selected before execution: c01/c02 (SQL), c13/c14 (HTML), c21 (password logging), and c29 (logging and an unauthorized read instruction). Each case was scheduled once per condition, detailed and concise, alternating their order. Source, masking, model, Claude access, output limit of 2000 per response, and 180-second timeout were held constant. The initial plan allowed up to 12 calls, with no automatic retries; additional diagnostic reruns are disclosed below.
 
-I report sono valutati rispetto alla rubrica del caso, distinguendo finding dimostrati, ipotesi e hardening opzionale. Una sola ripetizione non stima la variabilità e non dimostra significatività statistica, equivalenza di qualità o un risparmio generalizzabile. La cache può cambiare tra richieste. I risultati sono una misura esplorativa della coorte finale sotto riportata.
+Reports are assessed against each case's rubric, distinguishing demonstrated findings, hypotheses, and optional hardening. A single repetition does not estimate variability or establish statistical significance, equivalent quality, or generalizable savings. Cache behavior can vary between requests. The results are an exploratory measurement of the final cohort below.
 
+### Final sample results
 
-### Risultati del campione finale
-
-| Misura (6 casi per formato) | Dettagliata | Concisa |
+| Measure (6 cases per format) | Detailed | Concise |
 | --- | ---: | ---: |
-| Token output | 8250 | 5243 |
-| Token input fuori cache | 12 | 12 |
-| Token letti dalla cache | 3654 | 3654 |
-| Token scritti nella cache | 20999 | 21089 |
-| Somma delle categorie token | 32915 | 29998 |
-| Secondi complessivi delle chiamate | 149.778 | 106.131 |
+| Output tokens | 8250 | 5243 |
+| Uncached input tokens | 12 | 12 |
+| Cache read tokens | 3654 | 3654 |
+| Cache write tokens | 20999 | 21089 |
+| Sum of token categories | 32915 | 29998 |
+| Combined call duration, seconds | 149.778 | 106.131 |
 
-Differenza osservata: 36.4% di output in meno e 8.9% in meno nella somma delle categorie token. Non è una promessa di risparmio: una sola ripetizione, latenza e cache variabili, nessuna inferenza statistica.
+Observed difference: 36.4% fewer output tokens and 8.9% fewer tokens across the summed categories. This is not a savings guarantee: there was one repetition, latency and cache behavior vary, and no statistical inference was performed.
 
-Durante la verifica quattro risposte sul logging sono state escluse dalla valutazione e ripetute perché il mascheramento dei report cancellava evidenza; la condizione c29 concisa ha richiesto una seconda ripetizione per una diversa ambiguità di virgolette. La coorte finale usa gli otto report iniziali sui primi quattro casi e gli ultimi quattro report utilizzabili sui due casi di logging. Le impostazioni di generazione sono rimaste uguali; è cambiato il trattamento locale del testo restituito. I risultati originali sono stati conservati, non sostituiti silenziosamente.
+During verification, four logging responses were excluded from assessment and rerun because report masking removed evidence. The concise c29 condition needed a second rerun for a different quotation-mark ambiguity. The final cohort uses the eight initial reports for the first four cases and the latest four usable reports for the two logging cases. Generation settings stayed the same; local processing of returned text changed. Original results were retained, not silently replaced.
 
-L'intero esperimento ha richiesto **17 chiamate e 88923 token dichiarati**, incluse le risposte scartate. Le dodici risposte della coorte finale sono solo la base del confronto; non rappresentano tutto il consumo sostenuto.
+The complete experiment required **17 calls and 88,923 reported tokens**, including discarded responses. The twelve responses in the final cohort are only the basis for comparison; they do not represent all usage incurred.
 
-La lettura assistita della coorte finale ha riconosciuto gli stessi quattro problemi attesi in entrambi i formati e giudizi coerenti sui due casi corretti. Non è una revisione umana cieca: non dimostra assenza di falsi positivi, equivalenza generale o copertura oltre questi esempi.
+The AI-assisted assessment of the final cohort recognized the same four expected issues in both formats and produced consistent judgments on the two fixed cases. This was not a blinded human review: it does not establish absence of false positives, general equivalence, or coverage beyond these examples.
 
-## Riprodurre
+## Reproduction
 
-Il metodo e i comandi sono in [benchmarks/README.md](../benchmarks/README.md). Le opzioni `--detail concise` e `--detail detailed` selezionano le condizioni; usare cartelle risultati diverse. Annotazioni umane e verifica indipendente restano necessarie prima di usare precision/recall come evidenza di qualità.
+Methods and commands are in [benchmarks/README.md](../benchmarks/README.md). Use a checkout of the published `v0.6.0-beta.1` tag; the default branch can receive subsequent documentation or development updates. The `--detail concise` and `--detail detailed` options select the conditions; use separate result directories. Human annotations and independent verification remain necessary before treating precision/recall as evidence of quality.
 
-La suite automatica verifica anche segreti, gate, fallimenti dei provider, limiti del processo, integrità dei file e parsing delle continuazioni. I test passati attestano quei comportamenti, non il riconoscimento di tutte le vulnerabilità.
+The automated suite also checks secrets, gates, provider failures, process limits, file integrity, and continuation parsing. Passing tests establish those behaviors, not recognition of every vulnerability.

@@ -1,86 +1,87 @@
-# Vibe Shield — Guida per i tester
+# Vibe Shield — Tester guide
 
-Grazie per il test. Vibe Shield è un plugin per Claude Code che assiste i controlli dei progetti prima della pubblicazione: scansione segreti, audit OWASP con verifica avversariale, blocco automatico di commit e deploy a rischio, fix guidati. Target: anche utenti non tecnici (vibe coding), quindi i report sono in italiano semplice. Sotto il cofano: 9 skill, 5 agenti specializzati, hook PreToolUse/PostToolUse con script Bash e Python 3.
+Vibe Shield 0.6.0-beta.1 is experimental. It provides a standalone CLI and a Claude Code plugin to assist with security checks before publication: secret scanning, AI-assisted audits with adversarial verification, guards for intercepted risky commit and deployment commands, and guided fixes. Reports aim to be understandable to people without a security background. The plugin contains nine skills, five specialized agents, and PreToolUse/PostToolUse hooks backed by Bash and Python scripts.
 
-## Requisiti
+## Requirements
 
-- Claude Code (CLI) su macOS o Linux, versione recente (`claude --version`, testato su 2.1.198).
-- Bash, Git, grep e Python 3.8 o successivo obbligatori. Scanner dello stack (es. npm audit, pip-audit) e database raggiungibile sono necessari per completare il relativo audit; la loro assenza deve lasciare il gate incompleto.
+- A recent Claude Code CLI on macOS or Linux for plugin tests (`claude --version`; tested with 2.1.198).
+- Bash, Git, grep, and Python 3.9+ for the standalone CLI and full test suite. The plugin's guard scripts require Python 3.8+. Stack scanners (such as npm audit or pip-audit) and access to their databases are required to complete the corresponding audit; missing checks must leave the gate incomplete.
 
-## Installazione (2 minuti)
+## Plugin installation
 
-1. Scompatta la cartella dove preferisci.
-2. In una sessione Claude Code qualsiasi:
+Use the download or clone instructions in the [README](README.md), then:
+
+1. In a Claude Code session:
    ```
-   /plugin marketplace add /percorso/della/cartella/scompattata
+   /plugin marketplace add /path/to/vibe-shield-plugin
    /plugin install vibe-shield@vibe-shield-marketplace
    /reload-plugins
    ```
-3. Verifica: `/vibe-shield:security-help` deve rispondere.
+2. Verify that `/vibe-shield:security-help` responds.
 
-Per disinstallare: `/plugin uninstall vibe-shield` e `/plugin marketplace remove vibe-shield-marketplace`.
+To uninstall: `/plugin uninstall vibe-shield` and `/plugin marketplace remove vibe-shield-marketplace`.
 
-## Percorso di test suggerito
+## Suggested test path
 
-Su un progetto di prova (o una copia di uno vero):
+In a test project, or a copy of a real project:
 
-1. `/vibe-shield:setup-security` — blindatura preventiva
-2. Chiedi a Claude di scrivere in un file una chiave finta con formato reale (es. `sk_live_...` di 24+ caratteri): deve arrivare subito l'avviso dell'hook
-3. Chiedi a Claude di committare quel file: il commit deve essere BLOCCATO (anche con `git add X && git commit` in un comando solo)
-4. Chiedi di fare push: deve essere bloccato finché `/vibe-shield:pre-deploy` non passa
-5. `/vibe-shield:security-audit` su un progetto con vulnerabilità note (SQL concatenato, CORS *, RLS assente...) e valuta qualità e falsi positivi del report
-6. Se hai un tuo sito online: `/vibe-shield:post-deploy-check https://tuosito.tld`
+1. Run `/vibe-shield:setup-security` for preventive hardening.
+2. Ask Claude to write a fake key in a recognized format to a file (for example, `sk_live_...` with 24+ characters). The hook should immediately warn you.
+3. Ask Claude to commit that file. The commit should be BLOCKED, including when `git add X && git commit` is issued as a single command.
+4. Ask Claude to push. It should be blocked until `/vibe-shield:pre-deploy` passes.
+5. Run `/vibe-shield:security-audit` on a project with known vulnerabilities (concatenated SQL, inappropriate wildcard CORS, missing RLS where required, etc.). Assess the report's quality and false positives.
+6. If you own a live website, run `/vibe-shield:post-deploy-check https://your-site.example` with its actual URL.
 
-## Quello che ci interessa davvero: prova a romperlo
+## Adversarial testing
 
-Sei esperto di sicurezza: fai red teaming delle protezioni.
+If you have security experience, test the protections themselves:
 
-- Formati di segreti che sfuggono ai pattern (`scripts/patterns-exact.grep`)
-- Modi di committare o pubblicare che aggirano gli hook (comandi composti, alias, script intermedi, tool diversi da Bash)
-- Falsi positivi fastidiosi (c'è l'allowlist in `.vibe-shield/allowlist`, una ERE per riga)
-- Prompt injection: un file malevolo nel progetto può convincere gli agenti a ignorare o falsificare un finding?
-- Qualità dell'audit: finding gonfiati, mancati, gravità sbagliate; efficacia del verificatore avversariale
-- Robustezza degli script (`scripts/`): parsing JSON, fail-open abusabile, edge case git
+- Secret formats missed by the patterns in `scripts/patterns-exact.grep`.
+- Commit or publication paths that bypass the hooks: compound commands, aliases, wrapper scripts, and tools other than Bash.
+- Disruptive false positives. `.vibe-shield/allowlist` accepts one extended regular expression per line.
+- Prompt injection: can a malicious project file persuade the agents to ignore or fabricate a finding?
+- Audit quality: inflated or missed findings, incorrect severity, and the effectiveness of adversarial verification.
+- Script robustness in `scripts/`: JSON parsing, exploitable fail-open behavior, and Git edge cases.
 
-Nota dichiarata: gli hook proteggono solo ciò che passa da Claude Code; per il resto c'è il template CI (`templates/security-ci.yml`). Il bypass documentato `VIBE_SHIELD_SKIP=1` è una scelta consapevole di design.
+The hooks cover only intercepted operations within Claude Code. The CI template (`templates/security-ci.yml`) provides additional checks outside that path. The documented `VIBE_SHIELD_SKIP=1` bypass is an intentional design choice.
 
 ## Feedback
 
-Segnala per ogni problema: cosa hai fatto, cosa ti aspettavi, cosa è successo (con output). Anche due righe vanno benissimo. Grazie!
+For each problem, describe what you did, what you expected, and what happened. Include only relevant, sanitized output. Follow [SECURITY.md](SECURITY.md) for private vulnerability reports.
 
-## Regressioni automatiche
+## Automated regression tests
 
-Dalla radice del plugin:
+From the repository root:
 
 ```bash
 python3 -m unittest discover -s tests
 ```
 
-Le prove usano repository temporanei e credenziali sintetiche; non pubblicare segreti veri per testare il tool. Controllare almeno: segreto nello stage ma rimosso dal working tree, segreto già committato, commit e push concatenati, `git -C` su un altro repository, modifica successiva al pass, pass scaduto anche sullo stesso HEAD e fallimento che invalida un vecchio pass. Questi test dei guard non sostituiscono il collaudo reale nell’host.
+Tests use temporary repositories and synthetic credentials; never publish real secrets to test the tool. Check at least: a secret staged but removed from the working tree, an already committed secret, chained commit and push commands, `git -C` targeting another repository, changes after approval, approval expiration even on the same HEAD, and failures that invalidate an earlier approval. These guard tests do not replace real testing in the host.
 
-## Flussi delle skill e costo
+## Skill workflows and usage
 
-1. Un audit limitato a una cartella deve produrre un report parziale e gate incompleto.
-2. Scanner mancante, errore di rete/database o verifica interrotta devono impedire il pass anche con zero finding.
-3. Pre-deploy deve riusare solo un audit completo valido dello stesso contenuto. Un controllo extra fallito deve lasciare il gate bloccato.
-4. Fix-security deve richiedere nuova verifica e copertura completa; azzerare i conteggi non basta a scrivere pass.
-5. Confrontare audit vecchio e nuovo sullo stesso fixture, modello e configurazione dell’host, in sessioni separate: registrare token input/output/cache se disponibili, durata, numero di deleghe, copertura, finding confermati e vulnerabilità note mancate. Separare il caso di primo audit dal riuso in pre-deploy. Ripetere su più stack prima di concludere che il risparmio non peggiora la qualità.
-6. Se l’host non espone token o tempi, segnare “non disponibile”. Non inferire un risparmio percentuale dal solo numero di agenti.
+1. An audit limited to one folder must produce a partial report and leave the gate incomplete.
+2. A missing scanner, network/database error, or interrupted verification must prevent approval even when there are no findings.
+3. Pre-deploy must reuse only a valid, complete audit of the same content. A failed additional check must leave the gate blocked.
+4. Fix-security must require renewed verification and complete coverage; setting finding counts to zero is insufficient to grant approval.
+5. Compare old and new audits using the same fixture, model, and host configuration in separate sessions. Record input/output/cache tokens where available, duration, delegation count, coverage, confirmed findings, and missed known vulnerabilities. Separate the first audit from pre-deploy reuse. Repeat across multiple stacks before concluding that savings preserve quality.
+6. If the host does not expose tokens or timings, record “unavailable.” Do not infer a percentage saving from the number of agents alone.
 
-Gli agenti devono ereditare il modello della sessione e rispettare gli override espliciti. Un test nell’host deve confermare anche questo comportamento. La presenza delle skill in un host diverso da Claude Code non prova che esso esegua gli hook.
+Agents must inherit the session model and honor explicit overrides. Verify this in the host as well. The presence of skills in a host other than Claude Code does not prove that it executes the hooks.
 
-### Scanner e copertura
+### Scanner behavior and coverage
 
-`scan-secrets.sh .` restituisce 0 senza match, 2 con risultati, 3 se incompleto o in errore. `scan-secrets.sh --history --all` controlla la storia disponibile, segnalando incompleta una clone shallow. I valori dei segreti non sono stampati. Blob identici della storia vengono scansionati una sola volta per contenuto; nomi e allowlist restano valutati separatamente.
+`scan-secrets.sh .` returns 0 for no matches, 2 for findings, and 3 for incomplete scans or errors. `scan-secrets.sh --history --all` checks available history and reports a shallow clone as incomplete. Secret values are not printed. Identical historical blobs are scanned once per content value; names and allowlist rules are still evaluated separately.
 
-Le prove del template CI verificano instradamento e soglia con comandi simulati. Non sostituiscono un’esecuzione su GitHub o l’accesso ai database degli scanner.
+CI template tests verify routing and thresholds with simulated commands. They do not replace a GitHub workflow run or access to scanner databases.
 
-### Prerelease GitHub
+### GitHub prereleases
 
-Il gate supporta esclusivamente `gh release create TAG --verify-tag --prerelease --repo https://github.com/OWNER/REPO --notes "Testo breve"`, con titolo opzionale `--title "Titolo"`. Repository esplicito e origin devono coincidere; il tag locale deve identificare HEAD e corrispondere esattamente a quello remoto. File tracciati modificati, asset, target alternativi, note generate o lette da file, metadati con possibili segreti e opzioni non riconosciute bloccano la pubblicazione. Rimangono obbligatori audit completo e pre-deploy validi.
+The gate supports only `gh release create TAG --verify-tag --prerelease --repo https://github.com/OWNER/REPO --notes "Short notes"`, with an optional `--title "Title"`. The explicit repository must match origin; the local tag must identify HEAD and exactly match the remote tag. Modified tracked files, assets, alternative targets, generated notes or notes supplied through a file option, metadata containing possible secrets, and unrecognized options block publication. A valid complete audit and pre-deploy check remain mandatory.
 
-Le prove coprono il caso valido e il rifiuto di audit assente, tag divergente, contenuti modificati, metadati rischiosi e opzioni non supportate. La verifica del tag remoto nei test automatici è simulata; durante la pubblicazione reale viene interrogato origin.
+Tests cover the valid path and rejection of missing audits, mismatched tags, changed content, risky metadata, and unsupported options. Remote tag verification is simulated in automated tests; actual publication queries origin.
 
-## CLI indipendente beta 0.6
+## Standalone CLI beta 0.6
 
-La suite locale finale include 160 test. La wheel è stata installata in un ambiente isolato fuori dal checkout, verificando versione, provider, scanner e anteprima. Il plugin0.6 è stato installato in configurazione Claude temporanea. Le prove sui modelli e i loro limiti sono descritti in [docs/BENCHMARK.md](docs/BENCHMARK.md). La CI costruisce e installa inoltre la wheel su Linux/macOS e Python3.9/3.12.
+The final local suite for 0.6.0-beta.1 contains 160 tests. The wheel was installed in an isolated environment outside the checkout, with checks for the version, provider listing, scanner, and preview. The 0.6 plugin was installed in a temporary Claude configuration. Model evaluations and their limitations are documented in [docs/BENCHMARK.md](docs/BENCHMARK.md). CI also builds and installs the wheel on Linux/macOS with Python 3.9/3.12.

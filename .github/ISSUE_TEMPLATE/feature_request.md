@@ -1,14 +1,14 @@
 ---
-name: Proposta
-about: Descrivi un problema concreto e il miglioramento desiderato
+name: Feature request
+about: Describe a concrete problem and the improvement you would like
 ---
 
-**Problema da risolvere**
-Chi lo incontra e in quale situazione?
+**Problem to solve**
+Who encounters it, and in what situation?
 
-**Risultato desiderato**
-Come verificheresti che il miglioramento funziona?
+**Desired outcome**
+How would you verify that the improvement works?
 
-**Alternative considerate**
+**Alternatives considered**
 
-Non includere codice privato, segreti o log di sessione.
+Do not include private code, secrets, or session logs.

@@ -14,3 +14,8 @@ tasks/
 # Python runtime/test caches
 __pycache__/
 *.py[cod]
+
+# Standalone Python build artifacts
+build/
+dist/
+*.egg-info/

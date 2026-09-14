@@ -80,3 +80,7 @@ Le prove del template CI verificano instradamento e soglia con comandi simulati.
 Il gate supporta esclusivamente `gh release create TAG --verify-tag --prerelease --repo https://github.com/OWNER/REPO --notes "Testo breve"`, con titolo opzionale `--title "Titolo"`. Repository esplicito e origin devono coincidere; il tag locale deve identificare HEAD e corrispondere esattamente a quello remoto. File tracciati modificati, asset, target alternativi, note generate o lette da file, metadati con possibili segreti e opzioni non riconosciute bloccano la pubblicazione. Rimangono obbligatori audit completo e pre-deploy validi.
 
 Le prove coprono il caso valido e il rifiuto di audit assente, tag divergente, contenuti modificati, metadati rischiosi e opzioni non supportate. La verifica del tag remoto nei test automatici è simulata; durante la pubblicazione reale viene interrogato origin.
+
+## CLI indipendente beta 0.6
+
+La suite locale finale include 160 test. La wheel è stata installata in un ambiente isolato fuori dal checkout, verificando versione, provider, scanner e anteprima. Il plugin0.6 è stato installato in configurazione Claude temporanea. Le prove sui modelli e i loro limiti sono descritti in [docs/BENCHMARK.md](docs/BENCHMARK.md). La CI costruisce e installa inoltre la wheel su Linux/macOS e Python3.9/3.12.

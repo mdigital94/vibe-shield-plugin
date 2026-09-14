@@ -27,6 +27,13 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Run regression suite
         run: python3 -m unittest discover -s tests
+      - name: Build and install standalone wheel
+        run: |
+          python3 -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/vibe-shield-wheel" .
+          python3 -m pip install --no-deps "$RUNNER_TEMP"/vibe-shield-wheel/*.whl
+          cd "$RUNNER_TEMP"
+          python3 -m vibe_shield --version
+          python3 -m vibe_shield providers
       - name: Check shell syntax
         run: |
           for script in scripts/*.sh; do bash -n "$script"; done

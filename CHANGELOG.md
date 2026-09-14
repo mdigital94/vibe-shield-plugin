@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0-beta.1 — prerelease
+
+- CLI Python installabile (versione pacchetto 0.6.0b1): scanner locali e revisione consultiva con provider e modello espliciti, anteprima predefinita.
+- Accesso API multiprovider o login Claude CLI; altri CLI non ancora supportati.
+- Raccolta completa delle risposte Claude, inclusi blocchi continuati, ritiri e duplicati; errori e timeout conservano il testo parziale senza autorizzare il gate.
+- Mascheramento dei valori sensibili che preserva espressioni Python analizzabili; fallback conservativo nei formati ambigui.
+- Risposta concisa strutturata predefinita, modalità dettagliata opzionale e confronto esplorativo documentato.
+- Banco di prova sintetico e documentazione dei limiti; nessuna promessa di sicurezza completa o copertura universale.
+
 ## 0.5.1-beta.2 — prerelease
 
 - Supporto ristretto alle prerelease GitHub da tag locale/remoto verificato sul contenuto approvato, senza allegati.

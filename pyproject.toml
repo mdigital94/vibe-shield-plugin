@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=78.1.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vibe-shield"
+version = "0.6.0b1"
+description = "Local security checks and explicit multi-provider AI reviews"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+
+[project.scripts]
+vibe-shield = "vibe_shield.cli:main"
+
+[tool.setuptools]
+packages = ["vibe_shield"]

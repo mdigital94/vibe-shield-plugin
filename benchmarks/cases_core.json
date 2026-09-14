@@ -1,0 +1,182 @@
+[
+  {
+    "id": "c01",
+    "family": "sql_injection",
+    "variant": "vulnerable",
+    "files": {
+      "app.py": "import sqlite3\nfrom contextlib import closing\n\ndef lookup(name):\n    with closing(sqlite3.connect(\":memory:\")) as db:\n        db.execute(\"CREATE TABLE users (name TEXT, email TEXT)\")\n        db.executemany(\"INSERT INTO users VALUES (?, ?)\", [(\"alice\", \"alice@example.invalid\"), (\"bob\", \"bob@example.invalid\")])\n        return db.execute(\"SELECT email FROM users WHERE name = '\" + name + \"'\").fetchall()\n"
+    },
+    "expected": [
+      {
+        "id": "F1",
+        "cwe": "CWE-89",
+        "severity": "high",
+        "file": "app.py",
+        "line_start": 8,
+        "line_end": 8,
+        "explanation": "Il nome controllato dal chiamante viene concatenato nella query e può alterare il filtro SQL."
+      }
+    ],
+    "scope": "name proviene da input non attendibile. Il database è esclusivamente in memoria; si valuta solo la parametrizzazione del filtro."
+  },
+  {
+    "id": "c02",
+    "family": "sql_injection",
+    "variant": "safe",
+    "files": {
+      "app.py": "import sqlite3\nfrom contextlib import closing\n\ndef lookup(name):\n    with closing(sqlite3.connect(\":memory:\")) as db:\n        db.execute(\"CREATE TABLE users (name TEXT, email TEXT)\")\n        db.executemany(\"INSERT INTO users VALUES (?, ?)\", [(\"alice\", \"alice@example.invalid\"), (\"bob\", \"bob@example.invalid\")])\n        return db.execute(\"SELECT email FROM users WHERE name = ?\", (name,)).fetchall()\n"
+    },
+    "expected": [],
+    "scope": "name proviene da input non attendibile. Il database è esclusivamente in memoria; si valuta solo la parametrizzazione del filtro."
+  },
+  {
+    "id": "c03",
+    "family": "idor",
+    "variant": "vulnerable",
+    "files": {
+      "app.py": "RECORDS = {1: {\"owner\": \"alice\", \"value\": \"draft-a\"}, 2: {\"owner\": \"bob\", \"value\": \"draft-b\"}}\n\ndef read_record(user, record_id):\n    return RECORDS[record_id][\"value\"]\n"
+    },
+    "expected": [
+      {
+        "id": "F1",
+        "cwe": "CWE-639",
+        "severity": "high",
+        "file": "app.py",
+        "line_start": 4,
+        "line_end": 4,
+        "explanation": "Il riferimento al record è controllabile e manca il controllo che il proprietario coincida con l’utente autenticato."
+      }
+    ],
+    "scope": "user è un’identità già autenticata dal chiamante, record_id è input non attendibile. Si valuta soltanto l’autorizzazione sul singolo record."
+  },
+  {
+    "id": "c04",
+    "family": "idor",
+    "variant": "safe",
+    "files": {
+      "app.py": "RECORDS = {1: {\"owner\": \"alice\", \"value\": \"draft-a\"}, 2: {\"owner\": \"bob\", \"value\": \"draft-b\"}}\n\ndef read_record(user, record_id):\n    record = RECORDS[record_id]\n    if record[\"owner\"] != user:\n        raise PermissionError(\"Access denied\")\n    return record[\"value\"]\n"
+    },
+    "expected": [],
+    "scope": "user è un’identità già autenticata dal chiamante, record_id è input non attendibile. Si valuta soltanto l’autorizzazione sul singolo record."
+  },
+  {
+    "id": "c05",
+    "family": "path_traversal",
+    "variant": "vulnerable",
+    "files": {
+      "app.py": "from pathlib import Path\n\ndef select_path(root, name):\n    return Path(root) / name\n"
+    },
+    "expected": [
+      {
+        "id": "F1",
+        "cwe": "CWE-22",
+        "severity": "high",
+        "file": "app.py",
+        "line_start": 4,
+        "line_end": 4,
+        "explanation": "Il percorso restituito può uscire dalla directory consentita tramite componenti parent o un percorso assoluto."
+      }
+    ],
+    "scope": "root è una directory fidata e name è input non attendibile. Il percorso selezionato è destinato a una successiva lettura; questa fixture non legge file. Si valuta il confinamento con filesystem stabile, senza race o modifiche concorrenti ai symlink."
+  },
+  {
+    "id": "c06",
+    "family": "path_traversal",
+    "variant": "safe",
+    "files": {
+      "app.py": "from pathlib import Path\n\ndef select_path(root, name):\n    base = Path(root).resolve()\n    candidate = (base / name).resolve()\n    if candidate == base or base not in candidate.parents:\n        raise ValueError(\"Invalid path\")\n    return candidate\n"
+    },
+    "expected": [],
+    "scope": "root è una directory fidata e name è input non attendibile. Il percorso selezionato è destinato a una successiva lettura; questa fixture non legge file. Si valuta il confinamento con filesystem stabile, senza race o modifiche concorrenti ai symlink."
+  },
+  {
+    "id": "c07",
+    "family": "shell_injection",
+    "variant": "vulnerable",
+    "files": {
+      "app.py": "def build_command(name):\n    return {\"args\": \"printf '%s' \" + name, \"shell\": True}\n"
+    },
+    "expected": [
+      {
+        "id": "F1",
+        "cwe": "CWE-78",
+        "severity": "high",
+        "file": "app.py",
+        "line_start": 2,
+        "line_end": 2,
+        "explanation": "Il testo non attendibile entra in un comando destinato alla shell e può introdurre ulteriori comandi."
+      }
+    ],
+    "scope": "name è input non attendibile. Il risultato è destinato a subprocess.run(**result) da parte del chiamante; nei test si ispeziona soltanto il comando e non lo si esegue."
+  },
+  {
+    "id": "c08",
+    "family": "shell_injection",
+    "variant": "safe",
+    "files": {
+      "app.py": "def build_command(name):\n    return {\"args\": [\"printf\", \"%s\", name], \"shell\": False}\n"
+    },
+    "expected": [],
+    "scope": "name è input non attendibile. Il risultato è destinato a subprocess.run(**result) da parte del chiamante; nei test si ispeziona soltanto il comando e non lo si esegue."
+  },
+  {
+    "id": "c09",
+    "family": "password_hashing",
+    "variant": "vulnerable",
+    "files": {
+      "app.py": "import hashlib\n\ndef hash_password(password):\n    return hashlib.md5(password.encode(\"utf-8\")).hexdigest()\n"
+    },
+    "expected": [
+      {
+        "id": "F1",
+        "cwe": "CWE-916",
+        "severity": "medium",
+        "file": "app.py",
+        "line_start": 4,
+        "line_end": 4,
+        "explanation": "Le password vengono elaborate con MD5 veloce e senza salt, favorendo tentativi offline e correlazione tra password uguali."
+      }
+    ],
+    "scope": "Il risultato viene conservato come verificatore di password. Si valuta la derivazione con salt e costo computazionale; non si valuta il ciclo completo di autenticazione o il dimensionamento per una specifica infrastruttura."
+  },
+  {
+    "id": "c10",
+    "family": "password_hashing",
+    "variant": "safe",
+    "files": {
+      "app.py": "import hashlib\nimport secrets\n\ndef hash_password(password):\n    salt = secrets.token_bytes(16)\n    digest = hashlib.scrypt(password.encode(\"utf-8\"), salt=salt, n=16384, r=8, p=1)\n    return \"scrypt$16384$8$1$\" + salt.hex() + \"$\" + digest.hex()\n"
+    },
+    "expected": [],
+    "scope": "Il risultato viene conservato come verificatore di password. Si valuta la derivazione con salt e costo computazionale; non si valuta il ciclo completo di autenticazione o il dimensionamento per una specifica infrastruttura."
+  },
+  {
+    "id": "c11",
+    "family": "ssrf",
+    "variant": "vulnerable",
+    "files": {
+      "app.py": "from urllib.parse import urlsplit\n\ndef destination(url):\n    parsed = urlsplit(url)\n    if parsed.scheme not in (\"http\", \"https\"):\n        raise ValueError(\"Unsupported scheme\")\n    return url\n"
+    },
+    "expected": [
+      {
+        "id": "F1",
+        "cwe": "CWE-918",
+        "severity": "high",
+        "file": "app.py",
+        "line_start": 7,
+        "line_end": 7,
+        "explanation": "Il filtro consente richieste HTTP verso indirizzi interni o loopback scelti dall’utente."
+      }
+    ],
+    "scope": "url è input non attendibile, destinato a un client HTTP server-side. La destinazione consentita dal prodotto è solo api.example.invalid HTTPS porta443; il client a valle non segue redirect e la risoluzione della destinazione consentita è fidata. Non si eseguono rete o DNS e non si valutano redirect o DNS rebinding."
+  },
+  {
+    "id": "c12",
+    "family": "ssrf",
+    "variant": "safe",
+    "files": {
+      "app.py": "from urllib.parse import urlsplit\n\ndef destination(url):\n    parsed = urlsplit(url)\n    if parsed.scheme != \"https\" or parsed.hostname != \"api.example.invalid\":\n        raise ValueError(\"Destination denied\")\n    if parsed.username is not None or parsed.password is not None or parsed.port not in (None, 443):\n        raise ValueError(\"Destination denied\")\n    return url\n"
+    },
+    "expected": [],
+    "scope": "url è input non attendibile, destinato a un client HTTP server-side. La destinazione consentita dal prodotto è solo api.example.invalid HTTPS porta443; il client a valle non segue redirect e la risoluzione della destinazione consentita è fidata. Non si eseguono rete o DNS e non si valutano redirect o DNS rebinding."
+  }
+]

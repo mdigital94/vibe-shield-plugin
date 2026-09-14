@@ -1,0 +1,12 @@
+include LICENSE README.md pyproject.toml setup.py .env.example
+recursive-include docs *.md
+recursive-include scripts *.py *.sh *.grep
+recursive-include skills *.md
+recursive-include agents *.md
+recursive-include hooks *.json
+recursive-include templates *.yml
+recursive-include .claude-plugin *.json
+recursive-include vibe_shield *.py
+prune tasks
+prune .vibe-shield
+global-exclude __pycache__ *.pyc

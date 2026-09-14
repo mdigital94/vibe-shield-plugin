@@ -1,64 +1,53 @@
 # 🛡️ Vibe Shield
 
-**Controlli di sicurezza per chi sviluppa con Claude Code.**
+**Controlli di sicurezza per chi sviluppa con l’AI, con provider e modello a scelta.**
 
-Trova possibili segreti nel codice, verifica le vulnerabilità con un audit assistito dall’AI e blocca commit o pubblicazioni intercettati quando i controlli richiesti non sono superati. I risultati e le istruzioni per correggere i problemi sono in italiano.
+Scanner locali per i segreti, revisione AI dei file selezionati e un plugin Claude Code con controlli su commit e pubblicazione. Le revisioni della CLI sono consultive: non autorizzano da sole un rilascio.
 
-**Beta sperimentale · 0.5.1-beta.2 · [Licenza MIT](LICENSE)**
+**Beta sperimentale · 0.6.0-beta.1 · [Licenza MIT](LICENSE)**
 
-Software gratuito; l’uso dei modelli AI può avere costi o consumare il tuo abbonamento. Il plugin aiuta a ridurre i rischi, ma non garantisce la sicurezza completa di un progetto.
+Software gratuito. L’uso dei modelli può consumare l’abbonamento o avere costi API. Nessuna garanzia di sicurezza completa.
 
-[Installazione](#installazione-da-cli) · [Comandi](#comandi-skill) · [Verifiche e limiti](#stato-della-beta-e-contributi) · [Release](https://github.com/mdigital94/vibe-shield-plugin/releases/tag/v0.5.1-beta.2) · [Segnala una vulnerabilità](SECURITY.md)
+[Installazione](#installazione-da-cli) · [Provider e limiti](docs/PROVIDERS.md) · [Prove e consumi](docs/BENCHMARK.md) · [Segnalazioni riservate](SECURITY.md)
 
 ## Installazione da CLI
 
-Servono **Claude Code**, Git, Bash e Python 3.8 o successivo. Il collaudo degli hook riguarda Claude Code su macOS; le regressioni degli script girano su macOS e Linux. Windows e gli hook in altri host, incluso Codex, non sono verificati end-to-end.
-
-Dal terminale, per installare la beta disponibile sul ramo principale:
+Per la CLI indipendente servono Python 3.9+, Git, Bash e grep su macOS/Linux. In un ambiente virtuale:
 
 ```bash
-claude plugin marketplace add mdigital94/vibe-shield-plugin
-claude plugin install vibe-shield@vibe-shield-marketplace
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install "git+https://github.com/mdigital94/vibe-shield-plugin.git@v0.6.0-beta.1"
+vibe-shield --version
+vibe-shield scan /percorso/progetto
 ```
 
-Riavvia Claude Code e verifica che il plugin risponda:
+La versione Python è `0.6.0b1`. Non è pubblicata su PyPI: usa il riferimento Git esplicito. I comandi di scansione restano locali.
 
-```text
-/vibe-shield:security-help
-```
-
-Per il primo audit del tuo progetto:
-
-```text
-/vibe-shield:security-audit
-```
-
-Prima di affidarti ai blocchi automatici, esegui il [collaudo su un progetto temporaneo](TESTING.md): la disponibilità di una skill da sola non prova che gli hook siano attivi.
-
-### Installare una versione precisa
-
-Per usare esattamente la prerelease pubblicata, invece degli aggiornamenti del ramo principale:
+Esempio con l’accesso già configurato in Claude Code:
 
 ```bash
-git clone --branch v0.5.1-beta.2 https://github.com/mdigital94/vibe-shield-plugin.git vibe-shield
+vibe-shield review /percorso/progetto --mode cli --provider claude \
+  --model IL_TUO_MODELLO --file src/app.py
+```
+
+Questo mostra l’anteprima, senza inviare codice. Aggiungi `--execute` per la revisione AI. La risposta è concisa per impostazione predefinita; `--detail detailed` richiede la versione estesa.
+
+Sono disponibili API OpenAI, Anthropic, Gemini, Ollama e compatibili OpenAI; per l’accesso tramite CLI è supportato Claude. Gli altri adattatori CLI non sono ancora disponibili. Scelta, credenziali e limiti sono descritti nella [guida provider](docs/PROVIDERS.md).
+
+## Plugin Claude Code
+
+Per installare questa versione del plugin, usa un clone completo al tag:
+
+```bash
+git clone --branch v0.6.0-beta.1 https://github.com/mdigital94/vibe-shield-plugin.git vibe-shield
 claude plugin marketplace add ./vibe-shield
 claude plugin install vibe-shield@vibe-shield-marketplace
 ```
 
-Non usare un clone shallow (`--depth`): la verifica della storia Git risulterebbe incompleta. Puoi anche scaricare **Source code (zip)** dalla [release](https://github.com/mdigital94/vibe-shield-plugin/releases/tag/v0.5.1-beta.2) e aggiungere la cartella estratta come marketplace locale. Queste sono modalità alternative: se hai già registrato questo marketplace, verifica la sorgente configurata prima di cambiarla.
+Il ramo principale può contenere una versione precedente: il tag identifica questa beta. Non usare `--depth` se vuoi verificare l’intera storia Git. Se il marketplace è già registrato, verifica la sorgente prima di cambiarla.
 
-### Dalla sessione Claude Code
-
-```text
-/plugin marketplace add mdigital94/vibe-shield-plugin
-/plugin install vibe-shield@vibe-shield-marketplace
-```
-
-Per provare una copia locale senza installazione permanente:
-
-```bash
-claude --plugin-dir /percorso/di/vibe-shield
-```
+Riavvia Claude Code e usa `/vibe-shield:security-help`, poi `/vibe-shield:security-audit`. Prima di affidarti ai blocchi automatici, esegui il [collaudo su un progetto temporaneo](TESTING.md): la disponibilità di una skill non prova che gli hook siano attivi. Gli hook negli host diversi da Claude Code e Windows non sono verificati end-to-end.
 
 ## Cosa fa
 
@@ -171,7 +160,7 @@ La precedente candidata 0.5.1-beta.1 ha superato 55 regressioni e la CI su Linux
 
 La **0.5.1-beta.2 ha superato 62 regressioni locali e la [CI Linux/macOS con Python 3.9/3.12](https://github.com/mdigital94/vibe-shield-plugin/actions/runs/34598749966)**, inclusa la scansione Gitleaks della storia. Aggiunge la pubblicazione controllata delle prerelease GitHub da tag verificato. Queste prove verificano i comportamenti coperti dai test e non misurano la capacità di trovare vulnerabilità nelle applicazioni.
 
-Restano da completare l’installazione da parte di un tester esterno e prove su applicazioni con vulnerabilità note. Non viene dichiarata una copertura certificata di uno stack applicativo. Windows e host diversi da Claude Code non sono collaudati end-to-end.
+La beta 0.6 aggiunge la CLI indipendente, le risposte complete da Claude e un banco di prova sintetico. [Metodo, risultati e limiti](docs/BENCHMARK.md) distinguono i test automatici dalla valutazione delle risposte. Resta necessario il collaudo da parte di utenti esterni; non viene dichiarata copertura certificata di uno stack.
 
 Per contribuire vedi [CONTRIBUTING.md](CONTRIBUTING.md), per le novità [CHANGELOG.md](CHANGELOG.md). Segnala problemi ordinari nelle [issue](https://github.com/mdigital94/vibe-shield-plugin/issues); per vulnerabilità del plugin segui [SECURITY.md](SECURITY.md). Non caricare log integrali, credenziali o codice privato.
 
